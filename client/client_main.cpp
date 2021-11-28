@@ -27,14 +27,26 @@ enum class Type : unsigned long
 	FINISH = 5
 };
 
+struct AsyncClientCall
+{
+	HelloReply reply;
+	ClientContext context;
+	Status status;
+	std::unique_ptr<grpc::ClientAsyncResponseReader<HelloReply>> response_reader;
+};
+
 class AsyncClient final
 {
 public:
 	explicit AsyncClient(const std::string &channel_address)
-		: stub_{Greeter::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))}
-		, grpc_thread_{std::make_unique<std::thread>([this]{ grpc_thread(); })}
-		, stream_{stub_->AsyncSayHelloStream(&context_, &cq_, TAG(Type::CONNECT))}
-		, finish_status_{grpc::Status::OK}, is_finished{false}
+		: stub_{Greeter::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))},
+		  grpc_thread_bidi_{std::make_unique<std::thread>([this]
+														  { grpc_thread_bidi(); })},
+		  grpc_thread_unary_{std::make_unique<std::thread>([this]
+														   { grpc_thread_unary(); })},
+		  stream_{stub_->AsyncSayHelloStream(&context_, &cq_, TAG(Type::CONNECT))},
+		  finish_status_{grpc::Status::OK},
+		  is_finished{false}
 	{
 	}
 
@@ -46,9 +58,13 @@ public:
 
 		std::cout << "Shutting down client" << std::endl;
 		cq_.Shutdown();
+		unary_cq_.Shutdown();
 
-		if (grpc_thread_->joinable())
-			grpc_thread_->join();
+		if (grpc_thread_unary_->joinable())
+			grpc_thread_unary_->join();
+
+		if (grpc_thread_bidi_->joinable())
+			grpc_thread_bidi_->join();
 	}
 
 	void quit()
@@ -73,7 +89,7 @@ public:
 
 		HelloRequest request;
 		request.set_name("Sync");
-		
+
 		HelloReply reply;
 
 		Status status;
@@ -81,7 +97,7 @@ public:
 		status = stub_->SayHello(&context, request, &reply);
 
 		if (status.ok())
-			std::cout <<  reply.message() << std::endl;
+			std::cout << reply.message() << std::endl;
 		else
 			std::cout << "RPC failed: (" << status.error_code() << ") " << status.error_message() << std::endl;
 	}
@@ -92,31 +108,15 @@ public:
 
 		HelloRequest request;
 		request.set_name("Async");
-		
-		HelloReply reply;
 
-		Status status;
-		ClientContext context;
-    	CompletionQueue cq;
-
-		std::unique_ptr<grpc::ClientAsyncResponseReader<HelloReply>> rpc(stub_->PrepareAsyncSayHello(&context, request, &cq));
-		rpc->StartCall();
-		rpc->Finish(&reply, &status, (void*)1);
-
-		void* got_tag;
-		bool ok = false;
-		GPR_ASSERT(cq.Next(&got_tag, &ok));
-		GPR_ASSERT(got_tag == (void*)1);
-		GPR_ASSERT(ok);
-
-		if (status.ok())
-			std::cout <<  reply.message() << std::endl;
-		else
-			std::cout << "RPC failed: (" << status.error_code() << ") " << status.error_message() << std::endl;
+		AsyncClientCall *call = new AsyncClientCall;
+		call->response_reader = stub_->PrepareAsyncSayHello(&call->context, request, &unary_cq_);
+		call->response_reader->StartCall();
+		call->response_reader->Finish(&call->reply, &call->status, (void *)call);
 	}
 
 private:
-	void grpc_thread()
+	void grpc_thread_bidi()
 	{
 		while (true)
 		{
@@ -134,6 +134,34 @@ private:
 				Type status = static_cast<Type>(reinterpret_cast<unsigned long>(status_tag));
 				proceed(status);
 			}
+		}
+	}
+
+	void grpc_thread_unary()
+	{
+		while (true)
+		{
+			void *call_tag;
+			bool ok = false;
+
+			if (!unary_cq_.Next(&call_tag, &ok))
+			{
+				std::cerr << "Client stream closed" << std::endl;
+				break;
+			}
+
+			AsyncClientCall* call = static_cast<AsyncClientCall*>(call_tag);
+
+			if (ok)
+			{
+
+			if (call->status.ok())
+				std::cout << call->reply.message() << std::endl;
+			else
+				std::cout << "RPC failed: (" << call->status.error_code() << ") " << call->status.error_message() << std::endl;
+			}
+
+			delete call;
 		}
 	}
 
@@ -182,17 +210,20 @@ private:
 
 	ClientContext context_;
 	CompletionQueue cq_;
+	CompletionQueue unary_cq_;
 	std::unique_ptr<Greeter::Stub> stub_;
 	std::unique_ptr<ClientAsyncReaderWriter<HelloRequest, HelloReply>> stream_;
 	HelloRequest request_;
 	HelloReply response_;
-	std::unique_ptr<std::thread> grpc_thread_;
+	std::unique_ptr<std::thread> grpc_thread_bidi_;
+	std::unique_ptr<std::thread> grpc_thread_unary_;
 	grpc::Status finish_status_;
 };
 
 int main(int argc, char **argv)
 {
-	AsyncClient client("localhost:50051");
+	AsyncClient client("192.168.1.59:50051");
+	// AsyncClient client("localhost:50051");
 
 	std::string text;
 	while (true)
