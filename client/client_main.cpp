@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <condition_variable>
 
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
@@ -17,7 +18,7 @@ using helloworld::HelloRequest;
 
 #define TAG(value) reinterpret_cast<void *>(value)
 
-enum class Type : char
+enum class Type : unsigned long
 {
 	READ = 1,
 	WRITE = 2,
@@ -130,7 +131,7 @@ private:
 
 			if (ok)
 			{
-				Type status = static_cast<Type>(reinterpret_cast<char>(status_tag));
+				Type status = static_cast<Type>(reinterpret_cast<unsigned long>(status_tag));
 				proceed(status);
 			}
 		}
