@@ -1,20 +1,13 @@
-#include "services.pb.h"
 #include <functional>
+#include <vector>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
-#include <condition_variable>
 
 // TODO: check includes
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
-
-// TODO: remove
-using grpc::ClientAsyncReaderWriter;
-using grpc::ClientContext;
-using grpc::CompletionQueue;
-using grpc::Status;
 
 // TODO: rewrite proto using a new namespace and new messages
 using helloworld::Greeter;
@@ -23,8 +16,8 @@ using helloworld::HelloRequest;
 
 struct AsyncClientCall
 {
-	ClientContext context;
-	Status result_code;
+	grpc::ClientContext context;
+	grpc::Status result_code;
 	virtual void proceed(bool ok) = 0;
 };
 
@@ -63,53 +56,53 @@ struct AsyncClientUnaryCall : public AsyncClientCallback<ResponseT>
 	}
 };
 
-
-// TODO: move into AsyncClientBidiCall class
-enum class Type : char
-{
-	READ = 1,
-	WRITE = 2,
-	CONNECT = 3,
-	DONE = 4,
-	FINISH = 5
-};
-
 template<class ResponseT>
 struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 {
-	Type call_state;
+	enum class CallState : int
+	{
+		READ = 1,
+		WRITE = 2,
+		CONNECT = 3,
+		DONE = 4,
+		FINISH = 5
+	};
+
+	CallState call_state;
 	std::unique_ptr<grpc::ClientAsyncReaderWriter<HelloRequest, ResponseT>> rpc;
 
 	void proceed(bool ok) override
 	{
 		switch (this->call_state)
 		{
-		case Type::CONNECT:
+		case CallState::CONNECT:
 			std::cout << "CONNECT" << std::endl;
 			break;
 		
-		case Type::WRITE:
+		case CallState::WRITE:
 			std::cout << "WRITE"  << std::endl;
 			break;
 
-		case Type::READ:
+		case CallState::READ:
 			std::cout << "READ" << std::endl;
 			if (this->_on_response_callback) 
 				this->_on_response_callback(this->response);
 
-			this->call_state = Type::DONE;
+			this->call_state = CallState::DONE;
 			rpc->WritesDone((void *)this);
 			break;
 
-		case Type::DONE:
+		case CallState::DONE:
 			std::cout << "DONE" << std::endl;
-			this->call_state = Type::FINISH;
+			this->call_state = CallState::FINISH;
 			rpc->Finish(&this->result_code, (void *)this);
 			break;
 
-		case Type::FINISH:
+		case CallState::FINISH:
 			std::cout << "FINISH" << std::endl;
-			if(!this->result_code.ok()) std::cout << this->result_code.error_code() << this->result_code.error_message() << std::endl;
+			if(!this->result_code.ok()) 
+				std::cout << "RPC failed: (" << this->result_code.error_code() << ") " << this->result_code.error_message() << std::endl;
+	
 			delete this;
 			break;
 
@@ -125,40 +118,63 @@ class AsyncClient final
 {
 public:
 	explicit AsyncClient(const std::string &channel_address)
-		: stub_{Greeter::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))},
-		  grpc_thread_bidi_{std::make_unique<std::thread>([this] { grpc_thread_bidi(); })},
-		  grpc_thread_unary_{std::make_unique<std::thread>([this] { grpc_thread_unary(); })}
+		: _stub{Greeter::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))}
+		, _is_bidi_call_started{false}
 	{
+		_bidi_completion_queue = std::make_unique<grpc::CompletionQueue>();
+		_bidi_grpc_thread = std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _bidi_completion_queue);
+
+		for (auto cq_idx = 0; cq_idx < num_async_completion_queues; ++cq_idx)
+			_async_completion_queues.emplace_back(std::make_unique<grpc::CompletionQueue>());
+
+		for (auto thread_idx = 0; thread_idx < num_async_threads; ++thread_idx)
+		{
+			const auto cq_idx = thread_idx % num_async_completion_queues;
+			const auto cq = _async_completion_queues[cq_idx];
+			_async_grpc_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, cq));
+		}
 	}
 
 	~AsyncClient()
 	{
 		std::cout << "Shutting down client" << std::endl;
-		cq_.Shutdown();
-		unary_cq_.Shutdown();
+		
+		_bidi_completion_queue->Shutdown();
+		
+		if(_bidi_grpc_thread.joinable())
+			_bidi_grpc_thread.join();
+		
+		for (auto && cq : _async_completion_queues)
+			cq->Shutdown();
 
-		if (grpc_thread_unary_->joinable())
-			grpc_thread_unary_->join();
-
-		if (grpc_thread_bidi_->joinable())
-			grpc_thread_bidi_->join();
+		for (auto&& t : _async_grpc_threads)
+			if (t.joinable())
+				t.join();
 	}
 
 	void start()
 	{
-		// TODO: use a class variable to check if "is_started"
+		// // if(_bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::FINISH)
+		// {
+		// 	std::cout << "Unable to create a new Bidi Stream since one is already started." << std:: endl;
+		// 	std::cout << "Call stop() to finish current Bidi Stream before creating a new one." << std:: endl;
+		// 	return;
+		// }
 
-		bidi_call = new AsyncClientBidiCall<HelloReply>();
-		bidi_call->call_state = Type::CONNECT;
-		bidi_call->set_response_callback([this](HelloReply&& response){ result_callback(response); });
-		bidi_call->rpc = stub_->PrepareAsyncSayHelloStream(&bidi_call->context, &cq_);
-		bidi_call->rpc->StartCall((void *)bidi_call);
+		_is_bidi_call_started = true;
+
+		_bidi_call = new AsyncClientBidiCall<HelloReply>();
+		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::CONNECT;
+		_bidi_call->set_response_callback([this](HelloReply&& response){ result_callback(response); });
+		_bidi_call->rpc = _stub->PrepareAsyncSayHelloStream(&_bidi_call->context, _bidi_completion_queue.get());
+		_bidi_call->rpc->StartCall((void *)_bidi_call);
 	}
 
 	void stop()
 	{
-		bidi_call->call_state = Type::DONE;
-		bidi_call->rpc->WritesDone((void *)bidi_call);
+		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::DONE;
+		_bidi_call->rpc->WritesDone((void *)_bidi_call);
+		_is_bidi_call_started = false;
 	}
 
 	void result_callback(HelloReply response)
@@ -166,18 +182,22 @@ public:
 		std::cout << "result_callback:" << response.message() << std::endl;
 	}
 
-	void write_message(const std::string &msg)
+	void write_message(const std::string &msg, bool is_last = false)
 	{
-		bidi_call->call_state = Type::WRITE;
+		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::WRITE;
 		HelloRequest request;
 		request.set_name(msg);
-		bidi_call->rpc->Write(request, (void *)bidi_call);
+		
+		if(is_last)
+			_bidi_call->rpc->Write(request, grpc::WriteOptions().clear_buffer_hint(), (void *)_bidi_call);
+		else
+			_bidi_call->rpc->Write(request, grpc::WriteOptions().set_buffer_hint(), (void *)_bidi_call);
 	}
 
 	void read_message()
 	{
-		bidi_call->call_state = Type::READ;
-		bidi_call->rpc->Read(&bidi_call->response, (void *)bidi_call);
+		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::READ;
+		_bidi_call->rpc->Read(&_bidi_call->response, (void *)_bidi_call);
 	}
 
 	void unary_sync()
@@ -189,9 +209,9 @@ public:
 
 		HelloReply reply;
 
-		Status status;
-		ClientContext context;
-		status = stub_->SayHello(&context, request, &reply);
+		grpc::Status status;
+		grpc::ClientContext context;
+		status = _stub->SayHello(&context, request, &reply);
 
 		if (status.ok())
 			std::cout << reply.message() << std::endl;
@@ -207,59 +227,53 @@ public:
 		request.set_name("Async");
 
 		auto call = new AsyncClientUnaryCall<HelloReply>();
-		call->rpc = stub_->PrepareAsyncSayHello(&call->context, request, &unary_cq_);
+		auto cq_idx = get_next_casync_cq_index();
+		call->rpc = _stub->PrepareAsyncSayHello(&call->context, request, _async_completion_queues[cq_idx].get());
 		call->rpc->StartCall();
 		call->rpc->Finish(&call->response, &call->result_code, (void *)call);
 	}
 
 private:
-	// TODO: merge in a unique worker function "grpc_thread"
-	void grpc_thread_bidi()
+	void grpc_thread_worker(const std::shared_ptr<grpc::CompletionQueue>& cq)
 	{
 		while (true)
 		{
 			void *call_tag;
 			bool ok = false;
 
-			if (!cq_.Next(&call_tag, &ok))
+			if (!cq->Next(&call_tag, &ok))
 			{
 				std::cerr << "Client stream closed" << std::endl;
 				break;
 			}
 
-			AsyncClientCall* call = static_cast<AsyncClientCall*>(call_tag);
+			auto call = static_cast<AsyncClientCall*>(call_tag);
 			call->proceed(ok);
 		}
 	}
 
-	// TODO: merge in a unique worker function "grpc_thread"
-	void grpc_thread_unary()
+	unsigned get_next_casync_cq_index()
 	{
-		while (true)
-		{
-			void *call_tag;
-			bool ok = false;
+		_last_used_async_cq_index++;
+		if(_last_used_async_cq_index >= num_async_completion_queues)
+			_last_used_async_cq_index = 0;
 
-			if (!unary_cq_.Next(&call_tag, &ok))
-			{
-				std::cerr << "Client stream closed" << std::endl;
-				break;
-			}
-
-			AsyncClientCall* call = static_cast<AsyncClientCall*>(call_tag);
-			call->proceed(ok);
-		}
+		return _last_used_async_cq_index;
 	}
-
-	// TODO: merge and use only only one for 2 threads
-	CompletionQueue cq_;
-	CompletionQueue unary_cq_;
-
-	std::unique_ptr<std::thread> grpc_thread_bidi_;
-	std::unique_ptr<std::thread> grpc_thread_unary_;
 	
-	std::unique_ptr<Greeter::Stub> stub_;
-	AsyncClientBidiCall<HelloReply>* bidi_call;
+	std::unique_ptr<Greeter::Stub> _stub;
+	std::vector<std::thread> _async_grpc_threads;
+	std::vector<std::shared_ptr<grpc::CompletionQueue>> _async_completion_queues;
+	std::thread _bidi_grpc_thread;
+	std::shared_ptr<grpc::CompletionQueue> _bidi_completion_queue;
+	AsyncClientBidiCall<HelloReply>* _bidi_call;
+
+	bool _is_bidi_call_started;
+	unsigned _last_used_async_cq_index = 0;
+
+	// TODO: Enable configuration 
+	unsigned num_async_completion_queues = 2u;
+	unsigned num_async_threads = 4u;
 };
 
 int main(int argc, char **argv)
@@ -300,9 +314,10 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		client.write_message(text);
-		// if (text == "i" || text == "o")
-		// 	client.read_message();
+		if (text == "last")
+			client.write_message(text, true);
+		else
+			client.write_message(text);
 	}
 
 	return 0;

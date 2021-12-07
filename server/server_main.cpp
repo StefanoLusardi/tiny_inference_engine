@@ -1,273 +1,369 @@
+#include <cstddef>
+#include <functional>
+#include <grpcpp/impl/codegen/status.h>
+#include <ios>
+#include <mutex>
+#include <vector>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
+#include <condition_variable>
 
+// TODO: check includes
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
 
-using grpc::Server;
-using grpc::ServerAsyncReaderWriter;
-using grpc::ServerAsyncResponseWriter;
-using grpc::ServerBuilder;
-using grpc::ServerCompletionQueue;
-using grpc::ServerContext;
-using grpc::Status;
-using grpc::StatusCode;
 using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
 using namespace std::chrono_literals;
 
-class CallDataBase
+class AsyncServerCall
 {
 public:
-	CallDataBase(Greeter::AsyncService *service, ServerCompletionQueue *cq)
-		: service_{service}, cq_{cq}
+	AsyncServerCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
+		: _service{service}, _cq{cq}
 	{
 	}
 
-	virtual void proceed(bool ok) = 0;
+	virtual bool process(bool ok) = 0;
 
 protected:
-	Greeter::AsyncService *service_;
-	ServerCompletionQueue *cq_;
-	ServerContext ctx_;
-	HelloRequest request_;
-	HelloReply reply_;
+	std::shared_ptr<Greeter::AsyncService> _service;
+	std::shared_ptr<grpc::ServerCompletionQueue> _cq;
+	grpc::ServerContext _context;
 };
 
-class CallDataUnary : CallDataBase
+template<class RequestT, class ResponseT>
+class AsyncServerCallback : public AsyncServerCall
 {
 public:
-	CallDataUnary(Greeter::AsyncService *service, ServerCompletionQueue *cq)
-		: CallDataBase(service, cq), responder_{&ctx_}, status_{CREATE}
+	AsyncServerCallback(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
+		: AsyncServerCall(service, cq) {}
+
+protected:
+	RequestT _request;
+	ResponseT _reply;
+};
+
+template<class RequestT, class ResponseT>
+class AsyncServerUnaryCall : public AsyncServerCallback<RequestT, ResponseT>
+{
+public:
+	AsyncServerUnaryCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
+		: AsyncServerCallback<RequestT, ResponseT>(service, cq)
+		, _rpc{&this->_context}
+		, _call_state{CREATE}
 	{
-		service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, (void *)this);
-		status_ = PROCESS;
+		this->_service->RequestSayHello(&this->_context, &this->_request, &_rpc, this->_cq.get(), this->_cq.get(), (void *)this);
+		_call_state = PROCESS;
 	}
 
-	void proceed(bool ok)
+	bool process(bool ok) override
 	{
-		switch (status_)
+		if(!ok)
 		{
-		case PROCESS:
-		{
-			new CallDataUnary(service_, cq_);
-			reply_.set_message("Hello " + request_.name());
+			// _call_state = CallState::FINISH;
+			// _rpc.Finish(this->_reply, grpc::Status::CANCELLED, (void *)this);
 
-			std::this_thread::sleep_for(3s);
-
-			status_ = FINISH;
-			responder_.Finish(reply_, Status::OK, (void *)this);
-			break;
-		}
-
-		case FINISH:
 			delete this;
-			break;
-
-		default:
-			std::cerr << "Unexpected tag " << int(status_) << std::endl;
-			assert(false);
+			return false;
 		}
+
+		std::unique_lock<std::mutex> lock(_mutex);
+
+		switch (_call_state)
+		{
+			case PROCESS:
+			{
+				std::cout << "thread: " << std::this_thread::get_id() << " PROCESS" << std::endl;
+				new AsyncServerUnaryCall(this->_service, this->_cq);
+				this->_reply.set_message("Hello " + this->_request.name());
+
+				std::this_thread::sleep_for(3s);
+
+				_call_state = FINISH;
+				_rpc.Finish(this->_reply, grpc::Status::OK, (void *)this);
+				break;
+			}
+
+			case FINISH:
+				std::cout << "thread: " << std::this_thread::get_id() << " FINISH" << std::endl;
+				lock.unlock();
+				delete this;
+				break;
+
+			default:
+				std::cerr << "Unexpected tag " << int(_call_state) << std::endl;
+				assert(false);
+		}
+
+		return true;
 	}
 
 private:
-	enum CallStatus
+	enum CallState
 	{
 		CREATE,
 		PROCESS,
 		FINISH
 	};
 
-	CallStatus status_;
-	ServerAsyncResponseWriter<HelloReply> responder_;
+	grpc::ServerAsyncResponseWriter<HelloReply> _rpc;
+	CallState _call_state;
+	std::mutex _mutex;
 };
 
-class CallDataBidi : CallDataBase
+template<class RequestT, class ResponseT>
+class AsyncServerBidiCall : AsyncServerCallback<RequestT, ResponseT>
 {
 public:
-	CallDataBidi(Greeter::AsyncService *service, ServerCompletionQueue *cq)
-		: CallDataBase(service, cq), rw_{&ctx_}, status_{BidiStatus::CONNECT}
+	AsyncServerBidiCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
+		: AsyncServerCallback<RequestT, ResponseT>(service, cq)
+		, _rpc{&this->_context}
+		, _call_state{CallState::CREATE}
 	{
-		ctx_.AsyncNotifyWhenDone((void *)this);
-		service_->RequestSayHelloStream(&ctx_, &rw_, cq_, cq_, (void *)this);
+		this->_context.AsyncNotifyWhenDone((void *)this);
+		this->_service->RequestSayHelloStream(&this->_context, &_rpc, this->_cq.get(), this->_cq.get(), (void *)this);
 	}
 
-	void proceed(bool ok)
+	bool process(bool ok) override
 	{
 		std::unique_lock<std::mutex> lock(_mutex);
 
-		switch (status_)
+		switch (_call_state)
 		{
-		case BidiStatus::READ:
-
+		case CallState::READ:
+		{
 			if (!ok)
 			{
 				//Meaning client said it wants to end the stream either by a 'writedone' or 'finish' call.
-				std::cout << "thread:" << std::this_thread::get_id() << " tag:" << this << "Close stream" << std::endl;
-				Status _st = Status::OK;
-				rw_.Finish(_st, (void *)this);
-
-				status_ = BidiStatus::DONE;
+				std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - READ" << " - Stop Process: ok=false" << std::endl;
+				_rpc.Finish(grpc::Status::OK, (void *)this);
+				_call_state = CallState::DONE;
 				break;
 			}
 
-			std::cout << "thread:" << std::this_thread::get_id() << " tag:" << this << " Read: " << request_.name() << std::endl;
-
-			if (request_.name() == "i")
+			if (this->_request.name() == "last")
 			{
+				this->_reply.set_message("Server Reply");
+				std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - WRITE" << " - Reply: " << this->_reply.message() << std::endl;
+				
 				std::this_thread::sleep_for(3s);
-				reply_.set_message("reply - i");
-				rw_.Write(reply_, (void *)this);
-				status_ = BidiStatus::WRITE;
+				_rpc.Write(this->_reply, (void *)this);
+				_call_state = CallState::WRITE;
 				break;
 			}
 
-			if (request_.name() == "o")
+			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - READ" << " - Request: " << this->_request.name() << std::endl;
+			_rpc.Read(&this->_request, (void *)this);
+			_call_state = CallState::READ;
+			break;
+		}
+
+		case CallState::WRITE:
+			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - WRITE" << " - Reply: " << this->_reply.message() << std::endl;
+			_rpc.Read(&this->_request, (void *)this);
+			_call_state = CallState::READ;
+			break;
+
+		case CallState::CREATE:
+			if (!ok)
 			{
-				std::this_thread::sleep_for(3s);
-				reply_.set_message("reply - o");
-				rw_.Write(reply_, (void *)this);
-				status_ = BidiStatus::WRITE;
-				break;
+				std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - CREATE" << " - Stop Process: ok=false" << std::endl;
+
+				lock.unlock();
+				delete this;
+				return false;
 			}
 
-			rw_.Read(&request_, (void *)this);
-			status_ = BidiStatus::READ;
-
+			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - CREATE" << std::endl;
+			new AsyncServerBidiCall<RequestT, ResponseT>(this->_service, this->_cq);
+			_rpc.Read(&this->_request, (void *)this);
+			_call_state = CallState::READ;
 			break;
 
-		case BidiStatus::WRITE:
-			std::cout << "thread:" << std::this_thread::get_id() << " tag:" << this << " Write: " << reply_.message() << std::endl;
-			rw_.Read(&request_, (void *)this);
-			status_ = BidiStatus::READ;
+		case CallState::DONE:
+			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - DONE" << " - Context cancelled:" << std::boolalpha  << this->_context.IsCancelled() << std::endl;
+			_call_state = CallState::FINISH;
 			break;
 
-		case BidiStatus::CONNECT:
-			std::cout << "thread:" << std::this_thread::get_id() << " tag:" << this << " New client connected:" << std::endl;
-			new CallDataBidi(service_, cq_);
-			rw_.Read(&request_, (void *)this);
-			status_ = BidiStatus::READ;
-			break;
-
-		case BidiStatus::DONE:
-			std::cout << "thread:" << std::this_thread::get_id() << " tag:" << this << " Client stream finished , cancelled:" << this->ctx_.IsCancelled() << std::endl;
-			status_ = BidiStatus::FINISH;
-			break;
-
-		case BidiStatus::FINISH:
-			std::cout << "thread:" << std::this_thread::get_id() << "tag:" << this << " Client disconnected, cancelled:" << this->ctx_.IsCancelled() << std::endl;
+		case CallState::FINISH:
+			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - FINISH" << " - Context cancelled:" << std::boolalpha  << this->_context.IsCancelled() << std::endl;
 			lock.unlock();
 			delete this;
 			break;
 
 		default:
-			std::cerr << "Unexpected tag " << int(status_) << std::endl;
+			std::cerr << "Unexpected tag " << int(_call_state) << std::endl;
 			assert(false);
 		}
+
+		return true;
 	}
 
 private:
-	enum class BidiStatus
+	enum class CallState
 	{
 		READ = 1,
 		WRITE = 2,
-		CONNECT = 3,
+		CREATE = 3,
 		DONE = 4,
 		FINISH = 5
 	};
 
-	ServerAsyncReaderWriter<HelloReply, HelloRequest> rw_;
-	BidiStatus status_;
+	grpc::ServerAsyncReaderWriter<HelloReply, HelloRequest> _rpc;
+	CallState _call_state;
 	std::mutex _mutex;
 };
 
 class AsyncServer final
 {
 public:
+	explicit AsyncServer()
+	{
+		const std::string address = get_environment_variable("SERVER_ADDRESS", "0.0.0.0");
+		const std::string port = get_environment_variable("SERVER_PORT", "50051");
+		_server_uri = address + ":" + port;		
+		_num_threads_bidi_call = std::stoi(get_environment_variable("NUM_THREADS_BIDI", "1"));
+		_num_threads_unary_call = std::stoi(get_environment_variable("NUM_THREADS_UNARY", "4"));
+	}
+
 	~AsyncServer()
 	{
-		server_->Shutdown();
-		for (auto &&cq : _completion_queues)
-			cq->Shutdown();
+		if(_is_running)
+			stop();
+	}
+
+	const char* get_environment_variable(const char* key, const char* default_value = nullptr) noexcept
+	{
+		const char* var = std::getenv(key);
+		return var ? var : default_value;
+	}
+
+	void start()
+	{
+		_service = std::make_shared<Greeter::AsyncService>();
+
+		grpc::ServerBuilder builder;
+		builder.AddListeningPort(_server_uri, grpc::InsecureServerCredentials());
+		builder.RegisterService(_service.get());
+
+		// builder.AddChannelArgument(GRPC_ARG_KEEPALIVE_TIME_MS, 1000);
+		// builder.SetDefaultCompressionLevel(GRPC_COMPRESS_LEVEL_HIGH);
+		// builder.SetDefaultCompressionAlgorithm(GRPC_COMPRESS_GZIP);
+
+		// const auto num_cq_bidi_call = _num_threads_bidi_call;
+		// for (auto i = 0; i < num_cq_bidi_call; ++i)
+		// 	_completion_queues.emplace_back(builder.AddCompletionQueue());
+
+		// const auto num_cq_unary_call = _num_threads_unary_call;
+		// for (auto i = 0; i < num_cq_unary_call; ++i)
+		// 	_completion_queues.emplace_back(builder.AddCompletionQueue());
+
+		for (auto i = 0; i < 2; ++i)
+			_completion_queues.emplace_back(builder.AddCompletionQueue());
+
+		_server = builder.BuildAndStart();
+
+		for (auto thread_idx = 0; thread_idx < _num_threads_bidi_call; ++thread_idx)
+		{
+			const auto cq = _completion_queues[0];
+			new AsyncServerBidiCall<HelloRequest, HelloReply>(_service, cq);
+			_server_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::ServerCompletionQueue>& cq){ grpc_thread_worker(cq); }, cq));
+		}
+
+		for (auto thread_idx = 0; thread_idx < _num_threads_unary_call; ++thread_idx)
+		{
+			const auto cq = _completion_queues[1];
+			new AsyncServerUnaryCall<HelloRequest, HelloReply>(_service, cq);
+			_server_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::ServerCompletionQueue>& cq){ grpc_thread_worker(cq); }, cq));
+		}
+
+		std::cout << "Server running @ " << _server_uri << std::endl;
+		std::cout << "num_threads_unary_call: " << _num_threads_unary_call << std::endl;
+		std::cout << "num_threads_bidi_call: " << _num_threads_bidi_call << std::endl;
+
+		_is_running = true;
 	}
 
 	void run()
 	{
-		// There is no shutdown handling in this code.
-		std::string server_address("0.0.0.0:" + std::to_string(50051));
+		_server->Wait();		
+		std::unique_lock<std::mutex> lock(_shutdown_mutex);
+		_shutdown_cv.wait(lock, [this]{return !_is_running.load();});
+	}
 
-		ServerBuilder builder;
-		builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-		builder.RegisterService(&service_);
+	void stop()
+	{
+		_server->Shutdown();
 
-		// DEBUG
-		const auto num_threads = 1;
-		const auto num_cq = 1;
-		const auto num_rpcs = 1;
+		for (auto& t : _server_threads)
+			if(t.joinable())
+				t.join();
 
-		// const auto num_threads = std::thread::hardware_concurrency();
-		// const auto num_cq = num_threads / 2;
-		// const auto num_rpcs = 2;
+		for (auto&& cq : _completion_queues)
+			cq->Shutdown();
 
-		for (auto i = 0; i < num_cq; ++i)
-		{
-			_completion_queues.emplace_back(builder.AddCompletionQueue());
-		}
+		// Drain Completion Queues
+		void* drain_tag = nullptr;
+    	bool ok = false;
+		for (auto&& cq : _completion_queues)
+    		while (cq->Next(&drain_tag, &ok));
 
-		server_ = builder.BuildAndStart();
-
-		std::vector<std::thread> _server_threads;
-		for (auto thread_idx = 0; thread_idx < num_threads; ++thread_idx)
-		{
-			int cq_idx = thread_idx % num_cq;
-			for (auto rpcs_idx = 0; rpcs_idx < num_rpcs; ++rpcs_idx)
-			{
-				new CallDataUnary(&service_, _completion_queues[cq_idx].get());
-				new CallDataBidi(&service_, _completion_queues[cq_idx].get());
-			}
-
-			_server_threads.emplace_back(std::thread([this](int cq_idx)
-													 { grpc_thread(cq_idx); },
-													 cq_idx));
-		}
-
-		std::cout << "Server address: " << server_address << std::endl;
-		std::cout << "Worker threads: " << num_threads << std::endl;
-
-		for (auto &&t : _server_threads)
-			t.join();
+		_is_running = false;
+		_shutdown_cv.notify_one();
 	}
 
 private:
-	void grpc_thread(int cq_idx)
+	void grpc_thread_worker(const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
 	{
-		while (true)
+		while (_is_running)
 		{
-			void *call_tag;
+			void *call_tag = nullptr;
 			bool ok = false;
-			if (!_completion_queues[cq_idx]->Next(&call_tag, &ok))
+			if (!cq->Next(&call_tag, &ok))
 			{
 				std::cerr << "Server stream closed. Quitting" << std::endl;
 				break;
 			}
 
-			auto call = static_cast<CallDataBase *>(call_tag);
-			call->proceed(ok);
+			auto call = static_cast<AsyncServerCall*>(call_tag);
+			if (!call->process(ok))
+				break;
 		}
 	}
 
-	std::vector<std::unique_ptr<ServerCompletionQueue>> _completion_queues;
-	Greeter::AsyncService service_;
-	std::unique_ptr<Server> server_;
+	std::vector<std::thread> _server_threads;
+	std::vector<std::shared_ptr<grpc::ServerCompletionQueue>> _completion_queues;
+	std::shared_ptr<Greeter::AsyncService> _service;
+	std::unique_ptr<grpc::Server> _server;
+
+	std::atomic_bool _is_running;
+	std::mutex _shutdown_mutex;
+	std::condition_variable _shutdown_cv;
+
+	std::string _server_uri;
+	unsigned int _num_threads_unary_call;
+	unsigned int _num_threads_bidi_call;
 };
 
 int main(int argc, char **argv)
 {
 	AsyncServer server;
+	server.start();
+
+	// std::thread stop_thread([&server]
+	// {
+	// 	std::this_thread::sleep_for(1s);
+	// 	server.stop();
+	// });
+
 	server.run();
+
+	// stop_thread.join();
+
 	return 0;
 }
