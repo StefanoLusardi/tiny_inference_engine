@@ -27,5 +27,5 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-add_subdirectory(client)
+# add_subdirectory(client)
 add_subdirectory(server)

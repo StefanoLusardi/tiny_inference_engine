@@ -63,7 +63,7 @@ struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 	{
 		READ = 1,
 		WRITE = 2,
-		CONNECT = 3,
+		CREATE = 3,
 		DONE = 4,
 		FINISH = 5
 	};
@@ -75,8 +75,8 @@ struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 	{
 		switch (this->call_state)
 		{
-		case CallState::CONNECT:
-			std::cout << "CONNECT" << std::endl;
+		case CallState::CREATE:
+			std::cout << "CREATE" << std::endl;
 			break;
 		
 		case CallState::WRITE:
@@ -124,29 +124,20 @@ public:
 		_bidi_completion_queue = std::make_unique<grpc::CompletionQueue>();
 		_bidi_grpc_thread = std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _bidi_completion_queue);
 
-		for (auto cq_idx = 0; cq_idx < num_async_completion_queues; ++cq_idx)
-			_async_completion_queues.emplace_back(std::make_unique<grpc::CompletionQueue>());
-
+		_async_completion_queue = std::make_unique<grpc::CompletionQueue>();
 		for (auto thread_idx = 0; thread_idx < num_async_threads; ++thread_idx)
-		{
-			const auto cq_idx = thread_idx % num_async_completion_queues;
-			const auto cq = _async_completion_queues[cq_idx];
-			_async_grpc_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, cq));
-		}
+			_async_grpc_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _async_completion_queue));
 	}
 
 	~AsyncClient()
 	{
 		std::cout << "Shutting down client" << std::endl;
 		
-		_bidi_completion_queue->Shutdown();
-		
+		_bidi_completion_queue->Shutdown();		
 		if(_bidi_grpc_thread.joinable())
 			_bidi_grpc_thread.join();
 		
-		for (auto && cq : _async_completion_queues)
-			cq->Shutdown();
-
+		_async_completion_queue->Shutdown();
 		for (auto&& t : _async_grpc_threads)
 			if (t.joinable())
 				t.join();
@@ -164,7 +155,7 @@ public:
 		_is_bidi_call_started = true;
 
 		_bidi_call = new AsyncClientBidiCall<HelloReply>();
-		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::CONNECT;
+		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::CREATE;
 		_bidi_call->set_response_callback([this](HelloReply&& response){ result_callback(response); });
 		_bidi_call->rpc = _stub->PrepareAsyncSayHelloStream(&_bidi_call->context, _bidi_completion_queue.get());
 		_bidi_call->rpc->StartCall((void *)_bidi_call);
@@ -227,8 +218,7 @@ public:
 		request.set_name("Async");
 
 		auto call = new AsyncClientUnaryCall<HelloReply>();
-		auto cq_idx = get_next_casync_cq_index();
-		call->rpc = _stub->PrepareAsyncSayHello(&call->context, request, _async_completion_queues[cq_idx].get());
+		call->rpc = _stub->PrepareAsyncSayHello(&call->context, request, _async_completion_queue.get());
 		call->rpc->StartCall();
 		call->rpc->Finish(&call->response, &call->result_code, (void *)call);
 	}
@@ -251,25 +241,15 @@ private:
 			call->proceed(ok);
 		}
 	}
-
-	unsigned get_next_casync_cq_index()
-	{
-		_last_used_async_cq_index++;
-		if(_last_used_async_cq_index >= num_async_completion_queues)
-			_last_used_async_cq_index = 0;
-
-		return _last_used_async_cq_index;
-	}
 	
 	std::unique_ptr<Greeter::Stub> _stub;
 	std::vector<std::thread> _async_grpc_threads;
-	std::vector<std::shared_ptr<grpc::CompletionQueue>> _async_completion_queues;
+	std::shared_ptr<grpc::CompletionQueue> _async_completion_queue;
 	std::thread _bidi_grpc_thread;
 	std::shared_ptr<grpc::CompletionQueue> _bidi_completion_queue;
 	AsyncClientBidiCall<HelloReply>* _bidi_call;
 
 	bool _is_bidi_call_started;
-	unsigned _last_used_async_cq_index = 0;
 
 	// TODO: Enable configuration 
 	unsigned num_async_completion_queues = 2u;
@@ -284,6 +264,11 @@ int main(int argc, char **argv)
 	while (true)
 	{
 		std::cin >> text;
+		if (text == "x")
+		{
+			break;
+		}
+
 		if (text == "start")
 		{
 			client.start();
