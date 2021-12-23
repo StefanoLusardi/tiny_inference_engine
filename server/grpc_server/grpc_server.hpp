@@ -18,6 +18,7 @@ public:
 	explicit grpc_server();
 	~grpc_server();
 
+	const char* id() const override { return "grpc_server";}
 	void start() override;
 	void stop() override;
 

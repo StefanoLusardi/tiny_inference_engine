@@ -10,6 +10,7 @@ public:
 	explicit http_server() { }
 	~http_server() { }
 
+	const char* id() const override { return "http_server";}
 	void start() override { }
 	void stop() override { }
 };
