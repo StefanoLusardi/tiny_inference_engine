@@ -1,6 +1,15 @@
 #pragma once
 
+#include "engine_interface.hpp"
+
 namespace xyz::engine
 {
-    int run(int argc, char **argv);
+class engine final : public engine_interface
+{
+public:
+    explicit engine();
+    ~engine();
+
+private:
+};
 }

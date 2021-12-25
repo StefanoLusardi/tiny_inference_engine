@@ -1,8 +1,13 @@
 #pragma once
 
+#include <memory>
+#include <exception>
 #include <thread>
+
 #include "config.hpp"
 #include "server_interface.hpp"
+#include "engine_interface.hpp"
+
 #include <spdlog/spdlog.h>
 
 namespace xyz::engine
@@ -13,14 +18,21 @@ class server_manager
 public:
     explicit server_manager()
     {
-        static_assert(std::is_base_of<server_interface, ServerT>::value, "ServerT must derive from xyz::engine::server_interface");
+        static_assert(std::is_base_of_v<server_interface, ServerT>, "ServerT must derive from xyz::engine::server_interface");
     }
 
-    void run(config config)
+    void run(const std::shared_ptr<engine_interface>& engine_ptr, config config)
     {
-        spdlog::trace("running server manager: {}", _server->id());
-        _server = std::make_unique<ServerT>();
-        _server_thread = std::thread([this]{ _server->start(); });
+        try 
+        {
+            _server = std::make_unique<ServerT>(engine_ptr);
+            spdlog::trace("running server manager: {}", _server->id());
+            _server_thread = std::thread([this]{ _server->start(); });
+        }
+        catch (std::exception e)
+        {
+            spdlog::error("error creating server manager: {} - {}", _server->id(), e.what());
+        }
     }
 
     ~server_manager()

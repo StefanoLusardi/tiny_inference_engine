@@ -23,12 +23,18 @@ set(engine_src
     ${proto_src}
     ${grpc_src}
     engine/engine.cpp
-    engine/shutdown.cpp
     engine/parser.cpp
-    grpc_server/grpc_server.cpp)
+    engine/run.cpp
+    engine/shutdown.cpp
+    grpc_server/grpc_server.cpp
+    http_server/http_server.cpp
+)
 
 add_library(engine ${engine_src})
-target_link_libraries(engine PRIVATE CLI11::CLI11 spdlog::spdlog gRPC::grpc++)
+target_link_libraries(engine
+    PRIVATE CLI11::CLI11
+    PRIVATE spdlog::spdlog
+    PRIVATE gRPC::grpc++)
 target_include_directories(engine PRIVATE ${PROTO_OUT_DIR})
 
 # include(sanitizers)
