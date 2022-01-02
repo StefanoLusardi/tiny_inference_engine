@@ -9,7 +9,6 @@
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
 
-// TODO: rewrite proto using a new namespace and new messages
 using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
@@ -18,7 +17,7 @@ struct AsyncClientCall
 {
 	grpc::ClientContext context;
 	grpc::Status result_code;
-	virtual void proceed(bool ok) = 0;
+	virtual bool proceed(bool ok) = 0;
 };
 
 template<class ResponseT>
@@ -36,7 +35,7 @@ struct AsyncClientUnaryCall : public AsyncClientCallback<ResponseT>
 {
 	std::unique_ptr<grpc::ClientAsyncResponseReader<ResponseT>> rpc;
 
-	void proceed(bool ok) override
+	bool proceed(bool ok) override
 	{
 		if (ok)
 		{
@@ -52,7 +51,7 @@ struct AsyncClientUnaryCall : public AsyncClientCallback<ResponseT>
 			}
 		}
 
-		delete this;
+		return false;
 	}
 };
 
@@ -71,17 +70,17 @@ struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 	CallState call_state;
 	std::unique_ptr<grpc::ClientAsyncReaderWriter<HelloRequest, ResponseT>> rpc;
 
-	void proceed(bool ok) override
+	bool proceed(bool ok) override
 	{
 		switch (this->call_state)
 		{
 		case CallState::CONNECT:
 			std::cout << "CONNECT" << std::endl;
-			break;
+			return true;
 		
 		case CallState::WRITE:
 			std::cout << "WRITE"  << std::endl;
-			break;
+			return true;
 
 		case CallState::READ:
 			std::cout << "READ" << std::endl;
@@ -90,26 +89,25 @@ struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 
 			this->call_state = CallState::DONE;
 			rpc->WritesDone((void *)this);
-			break;
+			return true;
 
 		case CallState::DONE:
 			std::cout << "DONE" << std::endl;
 			this->call_state = CallState::FINISH;
 			rpc->Finish(&this->result_code, (void *)this);
-			break;
+			return true;
 
 		case CallState::FINISH:
 			std::cout << "FINISH" << std::endl;
 			if(!this->result_code.ok()) 
 				std::cout << "RPC failed: (" << this->result_code.error_code() << ") " << this->result_code.error_message() << std::endl;
-	
-			delete this;
-			break;
+			return false;
 
 		default:
 			std::cerr << "Unexpected tag " << (int)this->call_state << std::endl;
 			// TODO: static assert
 			assert(false);
+			return false;
 		}
 	}
 };
@@ -119,7 +117,6 @@ class AsyncClient final
 public:
 	explicit AsyncClient(const std::string &channel_address)
 		: _stub{Greeter::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))}
-		, _is_bidi_call_started{false}
 	{
 		_bidi_completion_queue = std::make_unique<grpc::CompletionQueue>();
 		_bidi_grpc_thread = std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _bidi_completion_queue);
@@ -154,14 +151,11 @@ public:
 
 	void start()
 	{
-		// // if(_bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::FINISH)
-		// {
-		// 	std::cout << "Unable to create a new Bidi Stream since one is already started." << std:: endl;
-		// 	std::cout << "Call stop() to finish current Bidi Stream before creating a new one." << std:: endl;
-		// 	return;
-		// }
-
-		_is_bidi_call_started = true;
+		if (_bidi_call && _bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::FINISH)
+		{
+			std::cout << "Warning: bidi call must be in write state before call read." << std::endl;;
+			return;
+		}
 
 		_bidi_call = new AsyncClientBidiCall<HelloReply>();
 		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::CONNECT;
@@ -172,9 +166,14 @@ public:
 
 	void stop()
 	{
+		// if (_bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::CONNECT)
+		// {
+		// 	std::cout << "Warning: bidi call must be in write state before call read." << std::endl;;
+		// 	return;
+		// }
+
 		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::DONE;
 		_bidi_call->rpc->WritesDone((void *)_bidi_call);
-		_is_bidi_call_started = false;
 	}
 
 	void result_callback(HelloReply response)
@@ -184,6 +183,13 @@ public:
 
 	void write_message(const std::string &msg, bool is_last = false)
 	{
+		if (_bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::CONNECT
+		&& _bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::WRITE)
+		{
+			std::cout << "Warning: bidi call must be in CREATE or WRITE state before call WRITE." << std::endl;;
+			return;
+		}
+
 		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::WRITE;
 		HelloRequest request;
 		request.set_name(msg);
@@ -196,6 +202,12 @@ public:
 
 	void read_message()
 	{
+		if (_bidi_call->call_state != AsyncClientBidiCall<HelloReply>::CallState::WRITE)
+		{
+			std::cout << "Warning: BIDI call must be in write state before call read." << std::endl;;
+			return;
+		}
+		
 		_bidi_call->call_state = AsyncClientBidiCall<HelloReply>::CallState::READ;
 		_bidi_call->rpc->Read(&_bidi_call->response, (void *)_bidi_call);
 	}
@@ -266,9 +278,8 @@ private:
 	std::vector<std::shared_ptr<grpc::CompletionQueue>> _async_completion_queues;
 	std::thread _bidi_grpc_thread;
 	std::shared_ptr<grpc::CompletionQueue> _bidi_completion_queue;
-	AsyncClientBidiCall<HelloReply>* _bidi_call;
+	AsyncClientBidiCall<HelloReply>* _bidi_call = nullptr;
 
-	bool _is_bidi_call_started;
 	unsigned _last_used_async_cq_index = 0;
 
 	// TODO: Enable configuration 
