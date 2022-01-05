@@ -1,5 +1,4 @@
 #include <exception>
-#include <spdlog/common.h>
 #include <thread>
 #include <chrono>
 
@@ -9,8 +8,9 @@
 #include "config.hpp"
 #include "server_manager.hpp"
 #include "engine.hpp"
-#include "../grpc_server/grpc_server.hpp"
-#include "../http_server/http_server.hpp"
+
+#include "../server/grpc_server.hpp"
+#include "../server/http_server.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -33,11 +33,11 @@ int run(int argc, char** argv)
 
         std::shared_ptr<engine_interface> engine_ptr = std::make_shared<engine>();
 
-        server_manager<xyz::grpc_server> grpc_server_manager;
+        server_manager<xyz::server::grpc_server> grpc_server_manager;
         if(cli.is_grpc_server_enabled())
             grpc_server_manager.run(engine_ptr, cli.get_config());
 
-        server_manager<xyz::http_server> http_server_manager;
+        server_manager<xyz::server::http_server> http_server_manager;
         if(cli.is_http_server_enabled())
             http_server_manager.run(engine_ptr, cli.get_config());
 

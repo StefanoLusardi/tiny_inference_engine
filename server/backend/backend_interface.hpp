@@ -1,6 +1,6 @@
 #pragma once
 
-#include "infer_respose.hpp"
+#include "infer_response.hpp"
 #include "infer_request.hpp"
 
 namespace xyz::backend

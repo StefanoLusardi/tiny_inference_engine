@@ -1,55 +1,79 @@
 syntax = "proto3";
 
-package helloworld;
+package tie;
 
-service Greeter {
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
-  rpc SayHelloStream (stream HelloRequest) returns (stream HelloReply) {}
+service InferenceService {
+  rpc EngineReady(EngineReadyRequest) returns (EngineReadyResponse) {}
+  
+  rpc ModelReady(ModelReadyRequest) returns (ModelReadyResponse) {}
+  rpc LoadModel(ModelLoadRequest) returns (ModelLoadResponse) {}
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse) {}
+  
+  rpc Infer(InferRequest) returns (InferResponse) {}
+  rpc InferStream(stream InferRequest) returns (stream InferResponse) {}
 }
 
-message HelloRequest {
-  string name = 1;
+// EngineReady
+message EngineReadyRequest {
+  string model_name = 1;
 }
 
-message HelloReply {
-  string message = 1;
+message EngineReadyResponse {
+  bool is_ready = 1;
+  string error_message = 2;
 }
 
 
-// syntax = "proto3";
-// 
-// package services;
-// 
-// message HelloRequest {
-//  string name = 1;
-// }
-// 
-// message HelloReply {
-//  string message = 1;
-// }
-// 
-// message SumRequest {
-//   string a = 1;
-//   string b = 2;
-// }
-// 
-// message SumReply {
-//   string result = 1;
-// }
-// 
-// service ServiceA {
-//   rpc SayHello (HelloRequest) returns (HelloReply) {}
-//    rpc GetSum (SumRequest) returns (SumReply) {}
-// }
-// 
-// message EchoRequest {
-//   string echo = 1;
-// }
-// 
-// message EchoReply {
-//   string echo = 1;
-// }
-// 
-// service ServiceB {
-//   rpc Echo (EchoRequest) returns (EchoReply) {}
-// }
+// ModelReady
+message ModelReadyRequest {
+  string model_name = 1;
+}
+
+message ModelReadyResponse {
+  bool is_ready = 1;
+  string model_name = 2;
+  string error_message = 3;
+}
+
+// LoadModel
+message ModelLoadRequest {
+  string model_name = 1;
+}
+message ModelLoadResponse {
+  bool is_loaded = 1;
+  string model_name = 2;
+  string error_message = 3;
+}
+
+// UnloadModel
+message UnloadModelRequest {
+  string model_name = 1;
+}
+
+message UnloadModelResponse {
+  bool is_unloaded = 1;
+  string model_name = 2;
+  string error_message = 3;
+}
+
+// Infer
+message InferRequest {
+  string data = 1;
+  string model_name = 2;
+}
+
+message InferResponse {
+  string data = 1;
+  string error_message = 2;
+}
+
+// InferStream
+message InferStreamRequest {
+  string data = 1;
+  string model_name = 2;
+}
+
+message InferStreamResponse {
+  string data = 1;
+  string error_message = 2;
+}

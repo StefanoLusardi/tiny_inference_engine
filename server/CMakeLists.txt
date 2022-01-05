@@ -21,15 +21,17 @@ include(grpc_common)
 
 set(TARGET_NAME engine)
 set(TARGET_SRC
+    backend/onnx_backend.cpp
+
+    engine/parser.cpp
+    engine/shutdown.cpp
+    engine/engine.cpp
+    engine/run.cpp
+
+    server/grpc_server.cpp
+    server/http_server.cpp
     ${proto_src}
     ${grpc_src}
-    engine/engine.cpp
-    engine/parser.cpp
-    engine/run.cpp
-    engine/shutdown.cpp
-    grpc_server/grpc_server.cpp
-    http_server/http_server.cpp
-    backend/onnx_backend.cpp
 )
 
 add_library(${TARGET_NAME} SHARED ${TARGET_SRC})

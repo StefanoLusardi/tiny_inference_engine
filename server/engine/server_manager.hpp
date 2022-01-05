@@ -5,8 +5,8 @@
 #include <thread>
 
 #include "config.hpp"
-#include "server_interface.hpp"
 #include "engine_interface.hpp"
+#include "../server/server_interface.hpp"
 
 #include <spdlog/spdlog.h>
 
