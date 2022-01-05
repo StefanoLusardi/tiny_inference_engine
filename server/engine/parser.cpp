@@ -7,6 +7,8 @@ namespace xyz
 {
 parser::parser() noexcept : _cli{std::make_unique<CLI::App>("xyz inference engine")}
 {
+    spdlog::trace("creating parser");
+
     _cli->set_version_flag("-v,--version", std::string("xyz inference server v0.0.1"));
 
     _config.log_level = "trace";

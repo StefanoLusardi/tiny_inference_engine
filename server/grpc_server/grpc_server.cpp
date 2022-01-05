@@ -24,16 +24,15 @@ namespace xyz
 class AsyncServerCall
 {
 public:
-	AsyncServerCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
-		: _service{service}, _cq{cq}
-	{
-	}
+	AsyncServerCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq, const std::shared_ptr<engine::engine_interface>& engine_ptr)
+		: _service{service}, _cq{cq}, _engine_ptr{engine_ptr} {}
 
 	virtual bool process(bool ok) = 0;
 
 protected:
 	std::shared_ptr<Greeter::AsyncService> _service;
 	std::shared_ptr<grpc::ServerCompletionQueue> _cq;
+	std::shared_ptr<engine::engine_interface> _engine_ptr;
 	grpc::ServerContext _context;
 };
 
@@ -41,8 +40,8 @@ template<class RequestT, class ResponseT>
 class AsyncServerCallback : public AsyncServerCall
 {
 public:
-	AsyncServerCallback(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
-		: AsyncServerCall(service, cq) {}
+	AsyncServerCallback(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq, const std::shared_ptr<engine::engine_interface>& engine_ptr)
+		: AsyncServerCall(service, cq, engine_ptr) {}
 
 protected:
 	RequestT _request;
@@ -53,8 +52,8 @@ template<class RequestT, class ResponseT>
 class AsyncServerUnaryCall : public AsyncServerCallback<RequestT, ResponseT>
 {
 public:
-	AsyncServerUnaryCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
-		: AsyncServerCallback<RequestT, ResponseT>(service, cq)
+	AsyncServerUnaryCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq, const std::shared_ptr<engine::engine_interface>& engine_ptr)
+		: AsyncServerCallback<RequestT, ResponseT>(service, cq, engine_ptr)
 		, _rpc{&this->_context}
 		, _call_state{CallState::CREATE}
 	{
@@ -80,7 +79,7 @@ public:
 			case CallState::PROCESS:
 			{
 				std::cout << "thread: " << std::this_thread::get_id() << " PROCESS" << std::endl;
-				new AsyncServerUnaryCall(this->_service, this->_cq);
+				new AsyncServerUnaryCall(this->_service, this->_cq, this->_engine_ptr);
 				
 				this->_response.set_message("Hello " + this->_request.name());
 				std::this_thread::sleep_for(3s);
@@ -121,8 +120,8 @@ template<class RequestT, class ResponseT>
 class AsyncServerBidiCall : AsyncServerCallback<RequestT, ResponseT>
 {
 public:
-	AsyncServerBidiCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq)
-		: AsyncServerCallback<RequestT, ResponseT>(service, cq)
+	AsyncServerBidiCall(const std::shared_ptr<Greeter::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq, const std::shared_ptr<engine::engine_interface>& engine_ptr)
+		: AsyncServerCallback<RequestT, ResponseT>(service, cq, engine_ptr)
 		, _rpc{&this->_context}
 		, _call_state{CallState::CREATE}
 	{
@@ -182,7 +181,7 @@ public:
 			}
 
 			std::cout << "thread: " << std::this_thread::get_id() << " tag: " << this << " - CREATE" << std::endl;
-			new AsyncServerBidiCall<RequestT, ResponseT>(this->_service, this->_cq);
+			new AsyncServerBidiCall<RequestT, ResponseT>(this->_service, this->_cq, this->_engine_ptr);
 			_call_state = CallState::READ;
 			_rpc.Read(&this->_request, (void *)this);
 			break;
@@ -269,14 +268,14 @@ void grpc_server::start()
 	for (auto thread_idx = 0; thread_idx < _num_threads_bidi_call; ++thread_idx)
 	{
 		const auto cq = _completion_queues[0];
-		new AsyncServerBidiCall<HelloRequest, HelloReply>(_service, cq);
+		new AsyncServerBidiCall<HelloRequest, HelloReply>(_service, cq, _engine_ptr);
 		_server_threads.emplace_back([this](const auto& cq){ grpc_thread_worker(cq); }, cq);
 	}
 
 	for (auto thread_idx = 0; thread_idx < _num_threads_unary_call; ++thread_idx)
 	{
 		const auto cq = _completion_queues[1];
-		new AsyncServerUnaryCall<HelloRequest, HelloReply>(_service, cq);
+		new AsyncServerUnaryCall<HelloRequest, HelloReply>(_service, cq, _engine_ptr);
 		_server_threads.emplace_back([this](const auto& cq){ grpc_thread_worker(cq); }, cq);
 	}
 

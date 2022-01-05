@@ -37,6 +37,9 @@ public:
 
     ~server_manager()
     {
+        if(!_server)
+            return;
+
         spdlog::trace("deleting server manager: {}", _server->id());
 
         _server->stop();

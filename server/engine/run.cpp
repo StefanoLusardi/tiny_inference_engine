@@ -1,4 +1,5 @@
 #include <exception>
+#include <spdlog/common.h>
 #include <thread>
 #include <chrono>
 
@@ -22,7 +23,7 @@ int run(int argc, char** argv)
     install_shutdown_signal_handlers();
 
     try
-    {
+    {    
         parser cli;
         if (auto[parse_ok, error_code] = cli.parse_cli(argc, argv); !parse_ok)
             return error_code;

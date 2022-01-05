@@ -7,6 +7,8 @@ project(grpc_client_server
     HOMEPAGE_URL "https://github.com/StefanoLusardi/grpc_client_server"
 )
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 message("System Info: " ${CMAKE_SYSTEM} ${CMAKE_SYSTEM_PROCESSOR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -26,6 +28,8 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
     file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/master/conan.cmake" "${CMAKE_BINARY_DIR}/conan.cmake" TLS_VERIFY ON)
 endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
+
+include(GNUInstallDirs)
 
 # add_subdirectory(client)
 add_subdirectory(server)
