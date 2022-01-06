@@ -26,13 +26,13 @@ private:
 	std::shared_ptr<engine::engine_interface> _engine_ptr;
 	std::atomic_bool _is_running;
 	std::vector<std::thread> _server_threads;
-	std::vector<std::shared_ptr<grpc::ServerCompletionQueue>> _completion_queues; // TODO: map<string (queue_name), CompletionQueue>
+	std::map<std::string_view, std::shared_ptr<grpc::ServerCompletionQueue>> _completion_queues;
 	std::shared_ptr<tie::InferenceService::AsyncService> _service;
 	std::unique_ptr<grpc::Server> _server;
 	
 	std::string _server_uri;
-	unsigned int _num_threads_unary_call;
-	unsigned int _num_threads_bidi_call;
+	unsigned int _num_threads_inference_single;
+	unsigned int _num_threads_inference_multi;
 };
 
 }

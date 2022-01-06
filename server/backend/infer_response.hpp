@@ -8,8 +8,8 @@ namespace xyz::backend
 struct infer_response
 {
     std::string_view model_name;
-    std::vector<float> data;
-    std::vector<int64_t> shape;
+    std::string_view data;
+    std::string_view score;
 };
 
 }

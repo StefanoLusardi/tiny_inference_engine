@@ -58,8 +58,9 @@ message UnloadModelResponse {
 
 // Infer
 message InferRequest {
-  string data = 1;
+  repeated float data = 1;
   string model_name = 2;
+  repeated int64 shape = 3;
 }
 
 message InferResponse {

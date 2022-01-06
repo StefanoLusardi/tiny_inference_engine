@@ -311,6 +311,78 @@ private:
 	AsyncServerCallIO<tie::UnloadModelRequest, tie::UnloadModelResponse> _io;
 };
 
+class SingleInferenceCall : public AsyncServerCall
+{
+public:
+	explicit SingleInferenceCall(const std::shared_ptr<tie::InferenceService::AsyncService>& service, const std::shared_ptr<grpc::ServerCompletionQueue>& cq, const std::shared_ptr<engine::engine_interface>& engine_ptr)
+		: AsyncServerCall(service, cq, engine_ptr), _io{ AsyncServerCallIO<tie::InferRequest, tie::InferResponse>() }
+	{
+		spdlog::trace("creating SingleInferenceCall");
+		spdlog::debug("SingleInferenceCall - CREATE");
+
+		_service->RequestInfer(&_io.context, &_io.request, &_io.rpc, _cq.get(), _cq.get(), (void *)this);
+		_call_state = AsyncServerCall::CallState::PROCESS;
+	}
+
+	~SingleInferenceCall()
+	{
+		spdlog::trace("deleting SingleInferenceCall");
+	}
+
+	bool process(bool ok) override
+	{
+		if(!ok)
+		{
+			// _call_state = CallState::FINISH;
+			// _rpc.Finish(this->_reply, grpc::Status::CANCELLED, (void *)this);
+			delete this;
+			return false;
+		}
+
+		std::unique_lock<std::mutex> lock(_mutex);
+
+		switch (_call_state)
+		{
+			case CallState::PROCESS:
+			{
+				spdlog::debug("SingleInferenceCall - PROCESS");
+				new SingleInferenceCall(_service, _cq, _engine_ptr);
+				
+				backend::infer_request request;
+				// request.data = _io.request.data();
+				request.model_name = _io.request.model_name();
+				request.shape = {_io.request.shape().begin(), _io.request.shape().end()};
+				spdlog::trace("SingleInferenceCall - PROCESS - Request - Model: {}", request.model_name);
+
+				const backend::infer_response response = _engine_ptr->infer(request);
+				
+				_io.response.set_data(response.data.data());
+				_io.response.set_error_message("");
+				spdlog::trace("SingleInferenceCall - PROCESS - Response - Model: {}", request.model_name);
+
+				_call_state = CallState::FINISH;
+				_io.rpc.Finish(_io.response, grpc::Status::OK, (void *)this);
+				break;
+			}
+
+			case CallState::FINISH:
+				spdlog::debug("SingleInferenceCall - FINISH");
+				lock.unlock();
+				delete this;
+				break;
+
+			default:
+				spdlog::error("SingleInferenceCall - Unexpected tag: {}", int(_call_state));
+				assert(false);
+		}
+
+		return true;
+	}
+
+private:
+	AsyncServerCallIO<tie::InferRequest, tie::InferResponse> _io;
+};
+
 /*
 template<class RequestT, class ResponseT>
 class AsyncServerBidiCall : AsyncServerCallback<RequestT, ResponseT>
@@ -425,8 +497,8 @@ grpc_server::grpc_server(const std::shared_ptr<engine::engine_interface>& engine
 	const std::string address = "0.0.0.0";
 	const std::string port = "50051";
 	_server_uri = address + ":" + port;
-	_num_threads_bidi_call = 1;
-	_num_threads_unary_call = 4;
+	_num_threads_inference_multi = 1;
+	_num_threads_inference_single = 4;
 
 	// const std::string address = get_environment_variable("SERVER_ADDRESS", "0.0.0.0");
 	// const std::string port = get_environment_variable("SERVER_PORT", "50051");
@@ -456,34 +528,35 @@ void grpc_server::start()
 	// builder.SetDefaultCompressionLevel(GRPC_COMPRESS_LEVEL_HIGH);
 	// builder.SetDefaultCompressionAlgorithm(GRPC_COMPRESS_GZIP);
 
-	for (auto cq_idx = 0; cq_idx < 3; ++cq_idx)
-		_completion_queues.emplace_back(builder.AddCompletionQueue());
+	if (_num_threads_inference_multi > 0)
+		_completion_queues.emplace("multi_inference_queue", builder.AddCompletionQueue());
+
+	if (_num_threads_inference_single > 0)
+		_completion_queues.emplace("single_inference_queue", builder.AddCompletionQueue());
+	
+	_completion_queues.emplace("engine_queries_queue", builder.AddCompletionQueue());
 
 	_server = builder.BuildAndStart();
-
 	
 	// Multi (Batch) Inferece Call
-	for (auto thread_idx = 0; thread_idx < _num_threads_bidi_call; ++thread_idx)
+	for (auto thread_idx = 0; thread_idx < _num_threads_inference_multi; ++thread_idx)
 	{
-		const auto cq = _completion_queues[0];
+		const auto cq = _completion_queues.at("multi_inference_queue");
 		//new BatchInferenceCall<tie::InferRequest, tie::InferResponse>(_service, cq, _engine_ptr);
 		_server_threads.emplace_back([this](const auto& cq){ grpc_thread_worker(cq); }, cq);
 	}
 	
-
-	
 	// Single Inferece Call
-	for (auto thread_idx = 0; thread_idx < _num_threads_unary_call; ++thread_idx)
+	for (auto thread_idx = 0; thread_idx < _num_threads_inference_single; ++thread_idx)
 	{
-		const auto cq = _completion_queues[1];
-		//new SingleInferenceCall<tie::InferRequest, tie::InferResponse>(_service, cq, _engine_ptr);
+		const auto cq = _completion_queues.at("single_inference_queue");
+		new SingleInferenceCall(_service, cq, _engine_ptr);
 		_server_threads.emplace_back([this](const auto& cq){ grpc_thread_worker(cq); }, cq);
 	}
 	
-	
 	// Engine Queries Calls
 	{
-		const auto cq = _completion_queues[2];
+		const auto cq = _completion_queues.at("engine_queries_queue");
 		new EngineReadyAsyncCall(_service, cq, _engine_ptr);
 		new ModelReadyAsyncCall(_service, cq, _engine_ptr);
 		new LoadModelAsyncCall(_service, cq, _engine_ptr);
@@ -492,8 +565,8 @@ void grpc_server::start()
 	}
 	
 	spdlog::info("Server running @ {}", _server_uri);
-	spdlog::info("num_threads_unary_call: {}", _num_threads_unary_call);
-	spdlog::info("num_threads_bidi_call: {}", _num_threads_bidi_call);
+	spdlog::info("Single Inference Threads: {}", _num_threads_inference_single);
+	spdlog::info("Multi (Batch) Inference Threads: {}", _num_threads_inference_multi);
 
 	_is_running = true;
 }
@@ -508,13 +581,13 @@ void grpc_server::stop()
 		if(t.joinable())
 			t.join();
 
-	for (auto&& cq : _completion_queues)
+	for (auto&& [_, cq] : _completion_queues)
 		cq->Shutdown();
 
 	// Drain Completion Queues
 	void* drain_tag = nullptr;
 	bool ok = false;
-	for (auto&& cq : _completion_queues)
+	for (auto&& [_, cq] : _completion_queues)
 		while (cq->Next(&drain_tag, &ok));
 
 	_is_running = false;
