@@ -16,5 +16,5 @@ add_executable(${TARGET_NAME} client_main.cpp ${proto_src} ${grpc_src})
 target_link_libraries(${TARGET_NAME} PRIVATE gRPC::grpc++)
 target_include_directories(${TARGET_NAME} PRIVATE ${PROTO_OUT_DIR})
 
-include(sanitizers)
-add_sanitizers(${TARGET_NAME})
+# include(sanitizers)
+# add_sanitizers(${TARGET_NAME})
