@@ -131,6 +131,7 @@ stages:
           vmImage: 'windows-2019'
         variables:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
+          # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
           MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
         steps:
           - task: CmdLine@2
@@ -185,14 +186,15 @@ stages:
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
               testRunTitle: 'Test Results - Windows 2019 - msvc-2019'
 
-      - job: Windows2016_msvc2017
-        displayName: Windows 2016 - msvc-2017
+      - job: Windows2022_msvc2022
+        displayName: Windows 2022 - msvc-202
         timeoutInMinutes: 15
         pool:
-          vmImage: 'vs2017-win2016'
+          vmImage: 'vs2022-win202'
         variables:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-          MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat"
+          # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
+          MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
         steps:
           - task: CmdLine@2
             displayName: 'Install Build Tools'
@@ -244,7 +246,63 @@ stages:
             inputs:
               testResultsFormat: 'cTest'
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - Windows2016 - msvc-2017'
+              testRunTitle: 'Test Results - Windows2022 - msvc-2022'
+
+      - job: MacOS1014_clang11
+        displayName: MacOS 10.14 - clang-11
+        timeoutInMinutes: 15
+        pool:
+          vmImage: 'macOS-10.14'
+        variables:
+          BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
+        steps:
+          - task: CmdLine@2
+            displayName: 'Install Build Tools'
+            inputs:
+              script: |
+                brew install ninja
+                pipx install conan
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
+          - task: PythonScript@0
+            displayName: 'Install ONNX Runtime'
+            inputs:
+              scriptSource: 'filePath'
+              scriptPath: 'scripts/download_onnxruntime.py'
+              arguments: '--platform macos'
+              workingDirectory: '$(Build.SourcesDirectory)'
+          - task: CmdLine@2
+            displayName: 'Create Build Folder'
+            inputs:
+              script: mkdir build
+              workingDirectory: $(Build.SourcesDirectory)
+          - task: CmdLine@2
+            displayName: 'Configure'
+            inputs:
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Build'
+            inputs:
+              script: cmake --build . --config $(BUILD_TYPE)
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Unit Test'
+            continueOnError: true
+            inputs:
+              script: 'ctest . --build-config $(BUILD_TYPE) --output-on-failure --timeout 60 -T Test -VV -j10'
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            continueOnError: true
+            inputs:
+              testResultsFormat: 'cTest'
+              testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
+              testRunTitle: 'Test Results - MacOS 10.14 - clang-11'
 
       - job: MacOS1015_clang12
         displayName: MacOS 1015 - clang-12
@@ -302,11 +360,11 @@ stages:
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
               testRunTitle: 'Test Results - MacOS 10.15 - clang-12'
 
-      - job: MacOS1014_clang11
-        displayName: MacOS 10.14 - clang-11
+      - job: MacOS11_clang13
+        displayName: MacOS 11 - clang-13
         timeoutInMinutes: 15
         pool:
-          vmImage: 'macOS-10.14'
+          vmImage: 'macOS-11'
         variables:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
         steps:
@@ -356,7 +414,7 @@ stages:
             inputs:
               testResultsFormat: 'cTest'
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - MacOS 10.14 - clang-11'
+              testRunTitle: 'Test Results - MacOS 11 - clang-13'
 
 
   - stage: Container
