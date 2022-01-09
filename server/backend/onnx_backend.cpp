@@ -35,7 +35,8 @@ bool onnx_backend::register_models(const std::vector<std::string_view>& models)
     {
         onnx_backend::session_info session_info;
 
-        auto session = std::make_unique<Ort::Session>(*_env, model_name.data(), session_options);
+        auto model_name_str = std::basic_string<ORTCHAR_T>(model_name.begin(), model_name.end());
+        auto session = std::make_unique<Ort::Session>(*_env, model_name_str.c_str(), session_options);
 
         for(auto idx = 0; idx < session->GetInputCount(); ++idx)
         {

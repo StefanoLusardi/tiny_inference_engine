@@ -1,6 +1,12 @@
 #pragma once
 
+#if defined(_WIN32) || defined(_WIN64)
+	#define API_EXPORT __declspec(dllexport)
+#else
+	#define API_EXPORT __attribute__ ((visibility ("default")))
+#endif
+
 namespace xyz::engine
 {
-    int run(int argc, char **argv);
+    int API_EXPORT run(int argc, char **argv);
 }
