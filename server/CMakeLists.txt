@@ -34,6 +34,8 @@ set(TARGET_SRC
     ${grpc_src}
 )
 
+set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 add_library(${TARGET_NAME} SHARED ${TARGET_SRC})
 
 set(CUDA_PACKAGE_SUFFIX "")
@@ -60,9 +62,6 @@ elseif(APPLE)
     target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/macos/lib)
 endif()
 
-# set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
-# set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-
 target_include_directories(${TARGET_NAME} PRIVATE ${PROTO_OUT_DIR})
 target_link_libraries(${TARGET_NAME}
     PRIVATE CLI11::CLI11
@@ -71,8 +70,10 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE ${ONNXRUNTIME_LIBS}
 )
 
+
 # include(sanitizers)
 # add_sanitizers(engine)
 
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE engine)
+

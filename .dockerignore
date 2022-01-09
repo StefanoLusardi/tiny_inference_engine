@@ -1,0 +1,17 @@
+.dockerignore
+server/Dockerfile
+client/Dockerfile
+
+.git/
+.vscode/
+
+/build
+/ci
+/client
+/onnxruntime
+
+.clang-format
+.gitignore
+compile_commands.json
+LICENSE
+README.md
