@@ -23,7 +23,6 @@ stages:
                 sudo apt update -y
                 sudo apt install -y --no-install-recommends make cmake ninja-build python3.8 pip
                 sudo pip install conan
-                sudo pip install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -83,7 +82,6 @@ stages:
                 sudo apt update -y
                 sudo apt install -y --no-install-recommends make cmake ninja-build python3.8 pip
                 sudo pip install conan
-                sudo pip install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -141,7 +139,6 @@ stages:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
-                pip install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -203,7 +200,6 @@ stages:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
-                pip install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -264,7 +260,6 @@ stages:
               script: |
                 brew install ninja
                 pipx install conan
-                pipx install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -321,7 +316,6 @@ stages:
               script: |
                 brew install ninja
                 pipx install conan
-                pipx install requests
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
