@@ -16,12 +16,6 @@ stages:
           CXX: g++-9
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
@@ -29,7 +23,12 @@ stages:
                 sudo apt update -y
                 sudo apt install -y --no-install-recommends make cmake ninja-build python3.8 pip
                 sudo pip install conan
-                sudo pip install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
@@ -76,12 +75,6 @@ stages:
           CXX: clang++-10
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
@@ -89,7 +82,12 @@ stages:
                 sudo apt update -y
                 sudo apt install -y --no-install-recommends make cmake ninja-build python3.8 pip
                 sudo pip install conan
-                sudo pip install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
@@ -135,19 +133,18 @@ stages:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
           MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
-                pip install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
@@ -197,19 +194,18 @@ stages:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
           MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat"
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
-                pip install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
@@ -258,19 +254,18 @@ stages:
         variables:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
               script: |
                 brew install ninja
                 pipx install conan
-                pipx install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
@@ -315,19 +310,18 @@ stages:
         variables:
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
         steps:
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
           - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
               script: |
                 brew install ninja
                 pipx install conan
-                pipx install requests
+          - task: UsePythonVersion@0
+            displayName: 'Set Python3'
+            inputs:
+              versionSpec: '3.8.x'
+              addToPath: true
+              architecture: 'x64'
           - task: PythonScript@0
             displayName: 'Install ONNX Runtime'
             inputs:
