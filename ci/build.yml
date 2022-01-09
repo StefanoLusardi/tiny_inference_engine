@@ -8,7 +8,7 @@ stages:
 
       - job: Ubuntu2004_gcc9
         displayName: Ubuntu 20.04 - gcc-9
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'ubuntu-20.04'
         variables:
@@ -67,7 +67,7 @@ stages:
 
       - job: Ubuntu2004_clang10
         displayName: Ubuntu 20.04 - clang-10
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'ubuntu-20.04'
         variables:
@@ -126,7 +126,7 @@ stages:
 
       - job: Windows2019_msvc2019
         displayName: Windows 2019 - msvc-2019
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'windows-2019'
         variables:
@@ -188,7 +188,7 @@ stages:
 
       - job: Windows2022_msvc2022
         displayName: Windows 2022 - msvc-202
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'windows-2022'
         variables:
@@ -250,7 +250,7 @@ stages:
 
       - job: MacOS1014_clang11
         displayName: MacOS 10.14 - clang-11
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'macOS-10.14'
         variables:
@@ -306,7 +306,7 @@ stages:
 
       - job: MacOS1015_clang12
         displayName: MacOS 1015 - clang-12
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'macOS-10.15'
         variables:
@@ -362,7 +362,7 @@ stages:
 
       - job: MacOS11_clang13
         displayName: MacOS 11 - clang-13
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'macOS-11'
         variables:
@@ -423,7 +423,7 @@ stages:
 
       - job: Server
         displayName: Tiny Inference Engine - Server
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'ubuntu-20.04'
         steps:
@@ -446,7 +446,7 @@ stages:
 
       - job: Client
         displayName: Tiny Inference Engine - Client
-        timeoutInMinutes: 15
+        timeoutInMinutes: 20
         pool:
           vmImage: 'ubuntu-20.04'
         steps:
