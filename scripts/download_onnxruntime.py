@@ -49,12 +49,16 @@ def setup(platform, with_gpu, package_version):
 
 
 def download(pwd, full_uri, archive_extension):
-    import requests
+    import urllib.request
     file_path = os.path.join(pwd, f'onnxruntime.{archive_extension}')
-    with open(file_path, "wb") as file:
-        response = requests.get(full_uri)
-        file.write(response.content)
-
+    with urllib.request.urlopen(full_uri) as response:
+        with open(file_path, "wb") as file:
+            while True:
+                chunk = response.read(16384)
+                if chunk:
+                    file.write(chunk)
+                else:
+                    break
 
 def unzip(pwd, archive_extension):
     import shutil
