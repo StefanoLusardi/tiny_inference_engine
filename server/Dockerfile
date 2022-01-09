@@ -13,6 +13,7 @@ RUN apt update -y && \
 ENV CC=gcc-9
 ENV CXX=g++-9
 ENV BUILD_TYPE=Release
+RUN python3 /tie/scripts/download_onnxruntime.py --platform Linux --package_version 1.10.0
 COPY . /tie/
 
 FROM base as build
