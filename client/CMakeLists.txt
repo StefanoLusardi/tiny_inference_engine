@@ -1,6 +1,6 @@
 set(TARGET_NAME client)
 
-conan_cmake_run(CONANFILE ../conanfile.py BUILD missing)
+conan_cmake_run(CONANFILE ../conanfile.py BUILD missing KEEP_RPATHS)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)

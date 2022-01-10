@@ -5,7 +5,7 @@ project(server
     HOMEPAGE_URL "https://github.com/StefanoLusardi/grpc_client_server"
 )
 
-conan_cmake_run(CONANFILE conanfile.py BUILD missing)
+conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 
 find_package(CLI11 REQUIRED)
@@ -34,8 +34,13 @@ set(TARGET_SRC
     ${grpc_src}
 )
 
-set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
+else()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+endif()
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
 add_library(${TARGET_NAME} SHARED ${TARGET_SRC})
 
 set(CUDA_PACKAGE_SUFFIX "")
@@ -52,17 +57,24 @@ if(WITH_CUDA AND APPLE)
 endif()
 
 if(WIN32)
-    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/windows${CUDA_PACKAGE_SUFFIX}/include)
-    target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/windows${CUDA_PACKAGE_SUFFIX}/lib)
+    set(PLATFORM "windows")
 elseif(UNIX AND NOT APPLE)
-    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/linux${CUDA_PACKAGE_SUFFIX}/include)
-    target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/linux${CUDA_PACKAGE_SUFFIX}/lib)
+    set(PLATFORM "linux")
 elseif(APPLE)
-    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/macos/include)
-    target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/onnxruntime/macos/lib)
+    set(PLATFORM "macos")
 endif()
+    
+set(ONNXRUNTIME_DIR ${CMAKE_SOURCE_DIR}/onnxruntime/${PLATFORM}${CUDA_PACKAGE_SUFFIX})
 
-target_include_directories(${TARGET_NAME} PRIVATE ${PROTO_OUT_DIR})
+target_link_directories(${TARGET_NAME} 
+    PRIVATE ${ONNXRUNTIME_DIR}/lib
+)
+
+target_include_directories(${TARGET_NAME}
+    PRIVATE ${PROTO_OUT_DIR}
+    PRIVATE ${ONNXRUNTIME_DIR}/include
+)
+
 target_link_libraries(${TARGET_NAME}
     PRIVATE CLI11::CLI11
     PRIVATE spdlog::spdlog
@@ -70,10 +82,12 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE ${ONNXRUNTIME_LIBS}
 )
 
-
 # include(sanitizers)
 # add_sanitizers(engine)
 
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE engine)
 
+install(TARGETS ${PROJECT_NAME} DESTINATION .)
+install(TARGETS engine DESTINATION .)
+install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION .)
