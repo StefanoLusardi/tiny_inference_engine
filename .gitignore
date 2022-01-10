@@ -1,6 +1,9 @@
 **/build
-compile_commands.json
+**/install
+**/onnxruntime
+
 .vscode
 .cache
 .clangd
-/onnxruntime
+
+compile_commands.json

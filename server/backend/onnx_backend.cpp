@@ -8,7 +8,6 @@ namespace xyz::backend
 onnx_backend::onnx_backend() noexcept
     : _env{std::make_unique<Ort::Env>(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "onnxruntime_backend") }
 {
-    register_models({"../../../../models/squeezenet1.1-7.onnx"});
 }
 
 onnx_backend::~onnx_backend()

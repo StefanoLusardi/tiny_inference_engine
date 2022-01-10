@@ -32,6 +32,7 @@ RUN cmake --install . --prefix /tie/install
 # FROM scratch as final
 FROM ubuntu:20.04 as final
 COPY --from=build /tie/install/ /tie
+COPY --from=build /tie/install/ /tie
 
 COPY --from=build /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
 COPY --from=build /lib/x86_64-linux-gnu/libstdc++.so.6 /lib/x86_64-linux-gnu/libstdc++.so.6

@@ -2,10 +2,10 @@ project(server
     LANGUAGES CXX 
     VERSION 1.0.0
     DESCRIPTION "gRPC Server"
-    HOMEPAGE_URL "https://github.com/StefanoLusardi/grpc_client_server"
+    HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
 )
 
-conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS)
+conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS OUTPUT_QUIET)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 
 find_package(CLI11 REQUIRED)
@@ -35,17 +35,16 @@ set(TARGET_SRC
 )
 
 if(APPLE)
-    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
+    set(CMAKE_INSTALL_RPATH "@executable_path")
 else()
-    set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 add_library(${TARGET_NAME} SHARED ${TARGET_SRC})
 
 set(CUDA_PACKAGE_SUFFIX "")
 set(ONNXRUNTIME_LIBS onnxruntime)
-option(WITH_CUDA "Accelerate ONNX Runtime backend with CUDA GPU. Default is CPU." OFF)
+option(WITH_CUDA "Accelerate ONNX Runtime backend with CUDA on Nvidia GPU. Default is CPU." OFF)
 
 if(WITH_CUDA AND NOT APPLE)
     set(CUDA_PACKAGE_SUFFIX "-gpu")
