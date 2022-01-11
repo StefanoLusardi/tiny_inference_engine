@@ -15,7 +15,7 @@ stages:
             Ubuntu1804_gcc9:
               CC: clang-9
               CXX: clang++-9
-              BUILD_GENERATOR: 'Unix Makefiles'
+              BUILD_GENERATOR: '"Unix Makefiles"'
               OS_IMAGE: 'ubuntu-18.04'
 
             Ubuntu2004_gcc9:
