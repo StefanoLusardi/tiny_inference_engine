@@ -79,7 +79,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -201,8 +201,6 @@ stages:
           vmImage: $(OS_IMAGE)
 
         variables:
-          CC: $(CC)
-          CXX: $(CXX)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
 
         steps:
