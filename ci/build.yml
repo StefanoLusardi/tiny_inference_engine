@@ -286,7 +286,7 @@ stages:
                 sleep 10s
                 docker kill --signal=SIGKILL tiny_inference_server
           - task: CmdLine@2
-            displayName: 'Run & Shutdown Server (gracefull)'
+            displayName: 'Run & Shutdown Server (graceful)'
             inputs:
               script: |
                 docker run --rm --name tiny_inference_server tie_server:latest
@@ -294,25 +294,22 @@ stages:
                 docker kill --signal=SIGINT tiny_inference_server
 
       - job: Client
+        condition: False
         displayName: Tiny Inference Engine - Client
         timeoutInMinutes: 5
         pool:
           vmImage: 'ubuntu-20.04'
         steps:
-          # - task: CmdLine@2
-          #   displayName: 'Build Unit Test'
-          #   inputs:
-          #     script: docker build -f client/Dockerfile --rm -t tie_client:latest --target test .
-          # - task: CmdLine@2
-          #   displayName: 'Run Unit Test'
-          #   inputs:
-          #     script: docker run --rm --name tiny_inference_client_test tie_client:latest
           - task: CmdLine@2
-            displayName: 'Build Server'
+            displayName: 'Build Unit Test'
+            inputs:
+              script: docker build -f client/Dockerfile --rm -t tie_client:latest --target test .
+          - task: CmdLine@2
+            displayName: 'Run Unit Test'
+            inputs:
+              script: docker run --rm --name tiny_inference_client_test tie_client:latest
+          - task: CmdLine@2
+            displayName: 'Build Client'
             inputs:
               script: docker build -f client/Dockerfile --rm -t tie_client:latest .
-          - task: CmdLine@2
-            displayName: 'Run Server'
-            inputs:
-              script: docker run --rm --name tiny_inference_client tie_client:latest
 
