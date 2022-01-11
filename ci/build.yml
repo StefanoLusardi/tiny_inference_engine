@@ -15,31 +15,37 @@ stages:
             Ubuntu1804_gcc9:
               CC: clang-9
               CXX: clang++-9
+              BUILD_GENERATOR: 'Unix Makefiles'
               OS_IMAGE: 'ubuntu-18.04'
 
             Ubuntu2004_gcc9:
               CC: gcc-9
               CXX: g++-9
+              BUILD_GENERATOR: ninja
               OS_IMAGE: 'ubuntu-20.04'
             
             Ubuntu2004_gcc10:
               CC: gcc-10
               CXX: g++-10
+              BUILD_GENERATOR: ninja
               OS_IMAGE: 'ubuntu-20.04'
 
             Ubuntu2004_clang10:
               CC: clang-10
               CXX: clang++-10
+              BUILD_GENERATOR: ninja
               OS_IMAGE: 'ubuntu-20.04'
             
             Ubuntu2004_clang11:
               CC: clang-11
               CXX: clang++-11
+              BUILD_GENERATOR: ninja
               OS_IMAGE: 'ubuntu-20.04'
             
             Ubuntu2004_clang12:
               CC: clang-12
               CXX: clang++-12
+              BUILD_GENERATOR: ninja
               OS_IMAGE: 'ubuntu-20.04'
 
         pool:
@@ -77,7 +83,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D CMAKE_MAKE_PROGRAM=ninja ..
+              script: cmake -G $(BUILD_GENERATOR) -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
