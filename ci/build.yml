@@ -77,7 +77,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D CMAKE_MAKE_PROGRAM=ninja ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
