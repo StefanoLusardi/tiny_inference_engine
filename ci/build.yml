@@ -6,15 +6,50 @@ stages:
     dependsOn: []
     jobs:
 
-      - job: Ubuntu2004_gcc9
-        displayName: Ubuntu 20.04 - gcc-9
+      - job: Linux
         timeoutInMinutes: 0
+        strategy:
+          maxParallel: 0
+          matrix:
+            
+            Ubuntu1804_gcc9:
+              CC: clang-9
+              CXX: clang++-9
+              OS_IMAGE: 'ubuntu-18.04'
+
+            Ubuntu2004_gcc9:
+              CC: gcc-9
+              CXX: g++-9
+              OS_IMAGE: 'ubuntu-20.04'
+            
+            Ubuntu2004_gcc10:
+              CC: gcc-10
+              CXX: g++-10
+              OS_IMAGE: 'ubuntu-20.04'
+
+            Ubuntu2004_clang10:
+              CC: clang-10
+              CXX: clang++-10
+              OS_IMAGE: 'ubuntu-20.04'
+            
+            Ubuntu2004_clang11:
+              CC: clang-11
+              CXX: clang++-11
+              OS_IMAGE: 'ubuntu-20.04'
+            
+            Ubuntu2004_clang12:
+              CC: clang-12
+              CXX: clang++-12
+              OS_IMAGE: 'ubuntu-20.04'
+
         pool:
-          vmImage: 'ubuntu-20.04'
+          vmImage: $(OS_IMAGE)
+
         variables:
-          CC: gcc-9
-          CXX: g++-9
+          CC: $(CC)
+          CXX: $(CXX)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
+
         steps:
           - task: CmdLine@2
             displayName: 'Install Build Tools'
@@ -63,76 +98,31 @@ stages:
             inputs:
               testResultsFormat: 'cTest'
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - Ubuntu 20.04 - gcc-9'
+              testRunTitle: 'Test Results - $(Agent.JobName)'
 
-      - job: Ubuntu2004_clang10
-        displayName: Ubuntu 20.04 - clang-10
+      - job: Windows
         timeoutInMinutes: 0
-        pool:
-          vmImage: 'ubuntu-20.04'
-        variables:
-          CC: clang-10
-          CXX: clang++-10
-          BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-        steps:
-          - task: CmdLine@2
-            displayName: 'Install Build Tools'
-            inputs:
-              script: |
-                sudo apt update -y
-                sudo apt install -y --no-install-recommends make cmake ninja-build python3.8 pip
-                sudo pip install conan
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
-          - task: PythonScript@0
-            displayName: 'Install ONNX Runtime'
-            inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform linux'
-              workingDirectory: '$(Build.SourcesDirectory)'
-          - task: CmdLine@2
-            displayName: 'Create Build Folder'
-            inputs:
-              script: mkdir build
-              workingDirectory: $(Build.SourcesDirectory)
-          - task: CmdLine@2
-            displayName: 'Configure'
-            inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Build'
-            inputs:
-              script: cmake --build . --config $(BUILD_TYPE)
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Unit Test'
-            continueOnError: true
-            inputs:
-              script: 'ctest . --build-config $(BUILD_TYPE) --output-on-failure --timeout 60 -T Test -VV -j10'
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: PublishTestResults@2
-            displayName: 'Publish Test Results'
-            continueOnError: true
-            inputs:
-              testResultsFormat: 'cTest'
-              testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - Ubuntu 20.04 - clang-10'
+        strategy:
+          maxParallel: 0
+          matrix:
+            
+            Windows2019_msvc2019:
+              # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
+              MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
+              OS_IMAGE: 'windows-2019'
+            
+            Windows2022_msvc2022:
+              # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
+              MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
+              OS_IMAGE: 'windows-2022'
 
-      - job: Windows2019_msvc2019
-        displayName: Windows 2019 - msvc-2019
-        timeoutInMinutes: 0
         pool:
-          vmImage: 'windows-2019'
+          vmImage: $(OS_IMAGE)
+
         variables:
+          MSVC_DEV_ENV: $(MSVC_DEV_ENV)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-          # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
-          MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
+
         steps:
           - task: CmdLine@2
             displayName: 'Install Build Tools'
@@ -184,77 +174,37 @@ stages:
             inputs:
               testResultsFormat: 'cTest'
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - Windows 2019 - msvc-2019'
+              testRunTitle: 'Test Results - $(Agent.JobName)'
 
-      - job: Windows2022_msvc2022
-        displayName: Windows 2022 - msvc-202
+      - job: MacOS
         timeoutInMinutes: 0
-        pool:
-          vmImage: 'windows-2022'
-        variables:
-          BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-          # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
-          MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
-        steps:
-          - task: CmdLine@2
-            displayName: 'Install Build Tools'
-            inputs:
-              script: |
-                choco install --accept-license -y Ninja
-                pip install conan
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
-          - task: PythonScript@0
-            displayName: 'Install ONNX Runtime'
-            inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform windows'
-              workingDirectory: '$(Build.SourcesDirectory)'
-          - task: CmdLine@2
-            displayName: 'Create Build Folder'
-            inputs:
-              script: mkdir build
-              workingDirectory: $(Build.SourcesDirectory)
-          - task: CmdLine@2
-            displayName: 'Configure'
-            inputs:
-              script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
-                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Build'
-            inputs:
-              script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
-                cmake --build . --config $(BUILD_TYPE)
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Unit Test'
-            continueOnError: true
-            inputs:
-              script: ctest . --build-config $(BUILD_TYPE) --output-on-failure --timeout 60 -T Test -VV -j10
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: PublishTestResults@2
-            displayName: 'Publish Test Results'
-            continueOnError: true
-            inputs:
-              testResultsFormat: 'cTest'
-              testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - Windows2022 - msvc-2022'
+        strategy:
+          maxParallel: 0
+          matrix:
+            
+            MacOS1014_clang11:
+              CC: clang-11
+              CXX: clang++-11
+              OS_IMAGE: 'macOS-10.14'
+            
+            MacOS1015_clang12:
+              CC: clang-12
+              CXX: clang++-12
+              OS_IMAGE: 'macOS-10.15'
+            
+            MacOS11_clang13:
+              CC: clang-13
+              CXX: clang++-13
+              OS_IMAGE: 'macOS-11'
 
-      - job: MacOS1014_clang11
-        displayName: MacOS 10.14 - clang-11
-        timeoutInMinutes: 0
         pool:
-          vmImage: 'macOS-10.14'
+          vmImage: $(OS_IMAGE)
+
         variables:
+          CC: $(CC)
+          CXX: $(CXX)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
+
         steps:
           - task: CmdLine@2
             displayName: 'Install Build Tools'
@@ -283,7 +233,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -302,151 +252,50 @@ stages:
             inputs:
               testResultsFormat: 'cTest'
               testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - MacOS 10.14 - clang-11'
-
-      - job: MacOS1015_clang12
-        displayName: MacOS 1015 - clang-12
-        timeoutInMinutes: 0
-        pool:
-          vmImage: 'macOS-10.15'
-        variables:
-          BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-        steps:
-          - task: CmdLine@2
-            displayName: 'Install Build Tools'
-            inputs:
-              script: |
-                brew install ninja
-                pipx install conan
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
-          - task: PythonScript@0
-            displayName: 'Install ONNX Runtime'
-            inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform macos'
-              workingDirectory: '$(Build.SourcesDirectory)'
-          - task: CmdLine@2
-            displayName: 'Create Build Folder'
-            inputs:
-              script: mkdir build
-              workingDirectory: $(Build.SourcesDirectory)
-          - task: CmdLine@2
-            displayName: 'Configure'
-            inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Build'
-            inputs:
-              script: cmake --build . --config $(BUILD_TYPE)
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Unit Test'
-            continueOnError: true
-            inputs:
-              script: 'ctest . --build-config $(BUILD_TYPE) --output-on-failure --timeout 60 -T Test -VV -j10'
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: PublishTestResults@2
-            displayName: 'Publish Test Results'
-            continueOnError: true
-            inputs:
-              testResultsFormat: 'cTest'
-              testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - MacOS 10.15 - clang-12'
-
-      - job: MacOS11_clang13
-        displayName: MacOS 11 - clang-13
-        timeoutInMinutes: 0
-        pool:
-          vmImage: 'macOS-11'
-        variables:
-          BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
-        steps:
-          - task: CmdLine@2
-            displayName: 'Install Build Tools'
-            inputs:
-              script: |
-                brew install ninja
-                pipx install conan
-          - task: UsePythonVersion@0
-            displayName: 'Set Python3'
-            inputs:
-              versionSpec: '3.8.x'
-              addToPath: true
-              architecture: 'x64'
-          - task: PythonScript@0
-            displayName: 'Install ONNX Runtime'
-            inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform macos'
-              workingDirectory: '$(Build.SourcesDirectory)'
-          - task: CmdLine@2
-            displayName: 'Create Build Folder'
-            inputs:
-              script: mkdir build
-              workingDirectory: $(Build.SourcesDirectory)
-          - task: CmdLine@2
-            displayName: 'Configure'
-            inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) .. 
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Build'
-            inputs:
-              script: cmake --build . --config $(BUILD_TYPE)
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: CmdLine@2
-            displayName: 'Unit Test'
-            continueOnError: true
-            inputs:
-              script: 'ctest . --build-config $(BUILD_TYPE) --output-on-failure --timeout 60 -T Test -VV -j10'
-              workingDirectory: $(BUILD_DIRECTORY)
-          - task: PublishTestResults@2
-            displayName: 'Publish Test Results'
-            continueOnError: true
-            inputs:
-              testResultsFormat: 'cTest'
-              testResultsFiles: '$(BUILD_DIRECTORY)/Testing/*/Test.xml'
-              testRunTitle: 'Test Results - MacOS 11 - clang-13'
+              testRunTitle: 'Test Results - $(Agent.JobName)'
 
 
   - stage: Container
     dependsOn: []
     jobs:
-
       - job: Server
         displayName: Tiny Inference Engine - Server
-        timeoutInMinutes: 0
+        timeoutInMinutes: 5
         pool:
           vmImage: 'ubuntu-20.04'
         steps:
-          # - task: CmdLine@2
-          #   displayName: 'Build Unit Test'
-          #   inputs:
-          #     script: docker build -f server/Dockerfile --rm -t tie_server:latest --target test .
-          # - task: CmdLine@2
-          #   displayName: 'Run Unit Test'
-          #   inputs:
-          #     script: docker run --rm --name tiny_inference_server_test tie_server:latest
+          - task: CmdLine@2
+            displayName: 'Build Unit Test'
+            continueOnError: true
+            inputs:
+              script: docker build -f server/Dockerfile --rm -t tie_server:latest --target test .
+          - task: CmdLine@2
+            displayName: 'Run Unit Test'
+            continueOnError: true
+            inputs:
+              script: docker run --rm --name tiny_inference_server_test tie_server:latest
           - task: CmdLine@2
             displayName: 'Build Server'
             inputs:
               script: docker build -f server/Dockerfile --rm -t tie_server:latest .
           - task: CmdLine@2
-            displayName: 'Run Server'
+            displayName: 'Run & Shutdown Server (kill)'
             inputs:
-              script: docker run --rm --name tiny_inference_server tie_server:latest
+              script: |
+                docker run --rm --name tiny_inference_server tie_server:latest
+                sleep 10s
+                docker kill --signal=SIGKILL tiny_inference_server
+          - task: CmdLine@2
+            displayName: 'Run & Shutdown Server (gracefull)'
+            inputs:
+              script: |
+                docker run --rm --name tiny_inference_server tie_server:latest
+                sleep 10s
+                docker kill --signal=SIGINT tiny_inference_server
 
       - job: Client
         displayName: Tiny Inference Engine - Client
-        timeoutInMinutes: 0
+        timeoutInMinutes: 5
         pool:
           vmImage: 'ubuntu-20.04'
         steps:
