@@ -46,8 +46,6 @@ stages:
           vmImage: $(OS_IMAGE)
 
         variables:
-          CC: $(CC)
-          CXX: $(CXX)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
 
         steps:
@@ -120,7 +118,6 @@ stages:
           vmImage: $(OS_IMAGE)
 
         variables:
-          MSVC_DEV_ENV: $(MSVC_DEV_ENV)
           BUILD_DIRECTORY: $(Build.SourcesDirectory)/build
 
         steps:
@@ -183,18 +180,12 @@ stages:
           matrix:
             
             MacOS1014_clang11:
-              CC: clang-11
-              CXX: clang++-11
               OS_IMAGE: 'macOS-10.14'
             
             MacOS1015_clang12:
-              CC: clang-12
-              CXX: clang++-12
               OS_IMAGE: 'macOS-10.15'
             
             MacOS11_clang13:
-              CC: clang-13
-              CXX: clang++-13
               OS_IMAGE: 'macOS-11'
 
         pool:
