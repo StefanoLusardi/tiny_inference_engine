@@ -5,7 +5,7 @@ project(server
     HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
 )
 
-conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS OUTPUT_QUIET)
+conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS)# OUTPUT_QUIET)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 
 find_package(CLI11 REQUIRED)
