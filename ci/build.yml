@@ -271,14 +271,14 @@ stages:
             displayName: 'Run & Shutdown Server (kill)'
             inputs:
               script: |
-                docker run --rm --name tiny_inference_server tie_server:latest
+                docker run -d --rm --name tiny_inference_server tie_server:latest
                 sleep 10s
                 docker kill --signal=SIGKILL tiny_inference_server
           - task: CmdLine@2
             displayName: 'Run & Shutdown Server (graceful)'
             inputs:
               script: |
-                docker run --rm --name tiny_inference_server tie_server:latest
+                docker run -d --rm --name tiny_inference_server tie_server:latest
                 sleep 10s
                 docker kill --signal=SIGINT tiny_inference_server
 
