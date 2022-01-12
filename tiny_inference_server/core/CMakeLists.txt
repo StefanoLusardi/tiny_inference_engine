@@ -1,9 +1,9 @@
-project(server 
-    LANGUAGES CXX 
-    VERSION 1.0.0
-    DESCRIPTION "gRPC Server"
-    HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
-)
+# project(tiny_inference_server 
+#     LANGUAGES CXX 
+#     VERSION 1.0.0
+#     DESCRIPTION "tiny inference server"
+#     HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
+# )
 
 conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS)# OUTPUT_QUIET)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
@@ -21,17 +21,28 @@ include(grpc_common)
 
 set(TARGET_NAME engine)
 set(TARGET_SRC
+    engine/include/run.hpp
+    engine/run.cpp
+    engine/parser.hpp
+    engine/parser.cpp
+    engine/shutdown.hpp
+    engine/shutdown.cpp
+    engine/engine.hpp
+    engine/engine.cpp
+    engine/server_manager.hpp
+
+    backend/backend_interface.hpp
+    backend/infer_request.hpp
+    backend/infer_response.hpp
+    backend/onnx_backend.hpp
     backend/onnx_backend.cpp
 
-    engine/parser.cpp
-    engine/shutdown.cpp
-    engine/engine.cpp
-    engine/run.cpp
-
+    ${GRPC_PROTO_FILES}
+    server/server_interface.hpp
+    server/grpc_server.hpp
     server/grpc_server.cpp
+    server/http_server.hpp
     server/http_server.cpp
-    ${proto_src}
-    ${grpc_src}
 )
 
 if(APPLE)
@@ -41,6 +52,7 @@ else()
 endif()
 
 add_library(${TARGET_NAME} SHARED ${TARGET_SRC})
+add_library(tie::${TARGET_NAME} ALIAS ${TARGET_NAME})
 
 set(CUDA_PACKAGE_SUFFIX "")
 set(ONNXRUNTIME_LIBS onnxruntime)
@@ -70,6 +82,7 @@ target_link_directories(${TARGET_NAME}
 )
 
 target_include_directories(${TARGET_NAME}
+    PUBLIC engine/include
     PRIVATE ${PROTO_OUT_DIR}
     PRIVATE ${ONNXRUNTIME_DIR}/include
 )
@@ -84,9 +97,5 @@ target_link_libraries(${TARGET_NAME}
 # include(sanitizers)
 # add_sanitizers(engine)
 
-add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE engine)
-
-install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(TARGETS engine DESTINATION .)
 install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION .)

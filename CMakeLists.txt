@@ -1,10 +1,10 @@
 ﻿cmake_minimum_required (VERSION 3.16)
 
-project(grpc_client_server 
+project(tiny_inference_engine 
     LANGUAGES CXX 
     VERSION 1.0.0
-    DESCRIPTION "gRPC Client/Server C++ examples"
-    HOMEPAGE_URL "https://github.com/StefanoLusardi/grpc_client_server"
+    DESCRIPTION "tiny inference engine"
+    HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
 )
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -31,13 +31,13 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 include(GNUInstallDirs)
 
-option(BUILD_CLIENT "Build Tiny Inference Engine Client" OFF)
-option(BUILD_SERVER "Build Tiny Inference Engine Server" ON)
+option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" OFF)
+option(TIE_BUILD_SERVER "Build Tiny Inference Engine Server" ON)
 
-if(${BUILD_CLIENT})
-    add_subdirectory(client)
+if(${TIE_BUILD_CLIENT})
+    add_subdirectory(tiny_inference_client)
 endif()
 
-if(${BUILD_SERVER})
-    add_subdirectory(server)
+if(${TIE_BUILD_SERVER})
+    add_subdirectory(tiny_inference_server)
 endif()
