@@ -1,4 +1,4 @@
-add_subdirectory(core)
+add_subdirectory(server_core)
 add_subdirectory(server)
 
 set(TIE_BUILD_SERVER_TESTS ON)

@@ -1,4 +1,4 @@
-set(TARGET_NAME tiny_inference_server_tests)
+set(TARGET_NAME tiny_inference_client_tests)
 
 conan_cmake_run(CONANFILE conanfile.py BUILD missing KEEP_RPATHS)# OUTPUT_QUIET)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
@@ -12,7 +12,7 @@ add_executable(${TARGET_NAME}
 
 # target_include_directories(${TARGET_NAME} PRIVATE include)
 target_link_libraries(${TARGET_NAME} 
-	PRIVATE tie::server_core 
+	PRIVATE tie::client_core 
 	PRIVATE GTest::GTest
 )
 

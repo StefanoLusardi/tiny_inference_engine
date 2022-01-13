@@ -31,7 +31,7 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 include(GNUInstallDirs)
 
-option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" OFF)
+option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" ON)
 option(TIE_BUILD_SERVER "Build Tiny Inference Engine Server" ON)
 
 if(${TIE_BUILD_CLIENT})
