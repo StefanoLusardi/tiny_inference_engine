@@ -58,8 +58,8 @@ stages:
                 sudo apt install -y --no-install-recommends make cmake python3.8 pip
                 sudo apt install -y ninja-build
                 sudo pip install conan
-                echo /usr/bin/ninja --version
-                echo ninja --version
+                /usr/bin/ninja --version
+                ninja --version
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -125,13 +125,13 @@ stages:
             Windows2019_mingw8:
               CC: gcc
               CXX: g++
-              MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
+              MSVC_DEV_ENV: ""
               OS_IMAGE: 'windows-2019'
             
             Windows2022_mingw11:
               CC: gcc
               CXX: g++
-              MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
+              MSVC_DEV_ENV: ""
               OS_IMAGE: 'windows-2022'
 
         pool:
@@ -169,14 +169,24 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+                if NOT $(MSVC_DEV_ENV)=="" (
+                  echo Running "$(MSVC_DEV_ENV)"
+                  call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+                ) else (
+                  echo Build with MinGW
+                )
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+                if NOT $(MSVC_DEV_ENV)=="" (
+                  echo Running "$(MSVC_DEV_ENV)"
+                  call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+                ) else (
+                  echo Build with MinGW
+                )
                 cmake --build . --config $(BUILD_TYPE)
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
