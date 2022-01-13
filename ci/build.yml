@@ -12,12 +12,6 @@ stages:
           maxParallel: 0
           matrix:
 
-            Ubuntu1804_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              ninja: '/usr/bin/ninja'
-              OS_IMAGE: 'ubuntu-18.04'
-
             Ubuntu2004_gcc9:
               CC: gcc-9
               CXX: g++-9
@@ -55,11 +49,8 @@ stages:
             inputs:
               script: |
                 sudo apt update -y
-                sudo apt install -y --no-install-recommends make cmake python3.8 pip
-                sudo apt install -y ninja-build
+                sudo apt install -y --no-install-recommends make cmake python3.8 pip ninja-build
                 sudo pip install conan
-                /usr/bin/ninja --version
-                ninja --version
           - task: CmdLine@2
             displayName: 'Update Conan settings'
             inputs:
@@ -174,14 +165,14 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                if NOT "$(MSVC_DEV_ENV)"=="" ( echo Running "$(MSVC_DEV_ENV)" && call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW && conan profile update settings.compiler.libcxx=libstdc++11 default)
+                if NOT "$(MSVC_DEV_ENV)"=="" (call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64) else (conan profile update settings.compiler.libcxx=libstdc++11 default)
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                if NOT "$(MSVC_DEV_ENV)"=="" ( echo Running "$(MSVC_DEV_ENV)" && call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
+                if NOT "$(MSVC_DEV_ENV)"=="" (call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64) else ( echo Build with MinGW )
                 cmake --build . --config $(BUILD_TYPE)
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
@@ -252,7 +243,7 @@ stages:
             inputs:
               script: |
                 brew install ninja
-                pipx install conan
+                pip install conan
           - task: CmdLine@2
             displayName: 'Update Conan settings'
             inputs:
