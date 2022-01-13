@@ -169,24 +169,14 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                if NOT $(MSVC_DEV_ENV)=="" (
-                  echo Running "$(MSVC_DEV_ENV)"
-                  call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
-                ) else (
-                  echo Build with MinGW
-                )
+                if NOT $(MSVC_DEV_ENV)=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                if NOT $(MSVC_DEV_ENV)=="" (
-                  echo Running "$(MSVC_DEV_ENV)"
-                  call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
-                ) else (
-                  echo Build with MinGW
-                )
+                if NOT $(MSVC_DEV_ENV)=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
                 cmake --build . --config $(BUILD_TYPE)
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
@@ -208,9 +198,6 @@ stages:
         strategy:
           maxParallel: 0
           matrix:
-            
-            MacOS1014_clang11:
-              OS_IMAGE: 'macOS-10.14'
 
             MacOS1015_clang12:
               OS_IMAGE: 'macOS-10.15'
@@ -261,6 +248,11 @@ stages:
               script: |
                 brew install ninja
                 pipx install conan
+                conan profile update settings.compiler.libcxx=libstdc++11 default
+          - task: CmdLine@2
+            displayName: 'Update Conan settings'
+            inputs:
+              script: |
                 conan profile update settings.compiler.libcxx=libstdc++11 default
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
