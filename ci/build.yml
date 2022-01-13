@@ -169,14 +169,14 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                if NOT $(MSVC_DEV_ENV)=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
+                if NOT "$(MSVC_DEV_ENV)"=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                if NOT $(MSVC_DEV_ENV)=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
+                if NOT "$(MSVC_DEV_ENV)"=="" ( echo Running "$(MSVC_DEV_ENV)" call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64 ) else ( echo Build with MinGW )
                 cmake --build . --config $(BUILD_TYPE)
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
