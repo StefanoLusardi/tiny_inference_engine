@@ -18,3 +18,8 @@ target_link_libraries(${TARGET_NAME}
 
 include(GoogleTest)
 gtest_discover_tests(${TARGET_NAME})
+
+# include(sanitizers)
+# add_sanitizers(${TARGET_NAME})
+
+install(TARGETS ${TARGET_NAME} DESTINATION client/client_tests)

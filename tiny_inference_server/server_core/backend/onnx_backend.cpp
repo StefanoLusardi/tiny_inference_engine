@@ -67,6 +67,11 @@ infer_response onnx_backend::infer(const infer_request& request)
         return {};
     }
 
+    const auto vector_product = [](const std::vector<int64_t>& v) -> int64_t
+    {
+        return std::accumulate(v.begin(), v.end(), 1ll, std::multiplies<int64_t>());
+    };
+
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
     std::vector<const char*> input_names;

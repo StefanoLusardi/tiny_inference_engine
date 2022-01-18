@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <functional>
 
-// TODO: check includes
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
 
@@ -17,7 +17,7 @@ struct AsyncClientBidiCall;
 class grpc_client final
 {
 public:
-	explicit grpc_client(const std::string &channel_address);
+	explicit grpc_client(const std::string& channel_address);
 	~grpc_client();
 
 	void start_infer_stream();
@@ -27,15 +27,15 @@ public:
 	
 	bool engine_ready_sync();
 	void engine_ready_async();
-	void set_engine_ready_callback(tie::EngineReadyResponse response);
-	
+	void set_engine_ready_callback(const std::function<void(bool)>& callback);
+
 	bool model_ready_sync();
 	void model_ready_async();
-	void set_model_ready_callback(tie::ModelReadyResponse response);
-	
-	// void unary_sync();
-	// void unary_async();
-	// void result_callback(HelloReply response);
+	void set_model_ready_callback(const std::function<void(bool)>& callback);
+
+protected:
+	std::function<void(bool)> _engine_ready_callback;
+	std::function<void(bool)> _model_ready_callback;
 
 private:
 	void grpc_thread_worker(const std::shared_ptr<grpc::CompletionQueue>& cq);
@@ -48,11 +48,12 @@ private:
 	std::thread _bidi_grpc_thread;
 	std::shared_ptr<grpc::CompletionQueue> _bidi_completion_queue;
 
-	AsyncClientBidiCall<tie::InferResponse>* _bidi_call = nullptr;
+	// TODO: use unique_ptr, but check for double delete.
+	// AsyncClientBidiCall<tie::InferResponse>* _bidi_call = nullptr;
 
 	// TODO: Enable configuration 
 	unsigned num_async_completion_queues = 2u;
-	unsigned num_async_threads = 4u;
+	unsigned num_async_threads = 1u;
 };
 
 }

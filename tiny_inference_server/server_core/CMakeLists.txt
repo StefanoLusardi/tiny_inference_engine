@@ -93,3 +93,6 @@ target_link_libraries(${TARGET_NAME}
 
 install(TARGETS ${TARGET_NAME} DESTINATION .)
 install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION .)
+
+install(TARGETS ${TARGET_NAME} DESTINATION server/server_core)
+install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION server/server_core)

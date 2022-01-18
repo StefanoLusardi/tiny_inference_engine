@@ -13,8 +13,10 @@ set(PROTO_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto)
 include(grpc_common)
 
 set(TARGET_SRC
-    include/client.hpp
-    src/client.cpp
+    include/client_core.hpp
+    src/client_core.cpp
+    src/grpc_client.hpp
+    src/grpc_client.cpp
     ${GRPC_PROTO_FILES}
 )
 
@@ -37,4 +39,4 @@ target_link_libraries(${TARGET_NAME} PRIVATE gRPC::grpc++)
 # include(sanitizers)
 # add_sanitizers(${TARGET_NAME})
 
-# install(TARGETS ${TARGET_NAME} DESTINATION .)
+install(TARGETS ${TARGET_NAME} DESTINATION client/client_core)

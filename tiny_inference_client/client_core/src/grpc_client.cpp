@@ -1,5 +1,7 @@
-#include "../include/client.hpp"
+#include "grpc_client.hpp"
+
 #include <iostream>
+
 
 namespace tie::client_core
 {
@@ -130,6 +132,8 @@ grpc_client::~grpc_client()
 			t.join();
 }
 
+/*
+
 void grpc_client::start_infer_stream()
 {
 	if (_bidi_call && _bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::FINISH)
@@ -182,6 +186,10 @@ void grpc_client::read_infer_stream_response()
 	_bidi_call->rpc->Read(&_bidi_call->response, (void *)_bidi_call);
 }
 
+*/
+
+
+
 bool grpc_client::engine_ready_sync()
 {
 	std::cout << "engine_ready_sync" << std::endl;
@@ -213,11 +221,14 @@ void grpc_client::engine_ready_async()
 	call->rpc = _stub->PrepareAsyncEngineReady(&call->context, request, _async_completion_queue.get());
 	call->rpc->StartCall();
 	call->rpc->Finish(&call->response, &call->result_code, (void *)call);
+
+	_engine_ready_callback(call->response.is_ready());
 }
 
-void grpc_client::set_engine_ready_callback(tie::EngineReadyResponse response)
+void grpc_client::set_engine_ready_callback(const std::function<void(bool)>& callback)
 {
-	std::cout << "engine_ready_async callback. engine is ready: " << response.is_ready() << std::endl;
+	_engine_ready_callback = callback;
+	// std::cout << "engine_ready_async callback. engine is ready: " << response.is_ready() << std::endl;
 }
 
 bool grpc_client::model_ready_sync()
@@ -258,9 +269,10 @@ void grpc_client::model_ready_async()
 	call->rpc->Finish(&call->response, &call->result_code, (void *)call);
 }
 
-void grpc_client::set_model_ready_callback(tie::ModelReadyResponse response)
+void grpc_client::set_model_ready_callback(const std::function<void(bool)>& callback)
 {
-	std::cout << "model_ready_async callback. model: " << response.model_name() << ":" << response.is_ready() << std::endl;
+	_model_ready_callback = callback;
+	// std::cout << "model_ready_async callback. model: " << response.model_name() << ":" << response.is_ready() << std::endl;
 }
 
 void grpc_client::grpc_thread_worker(const std::shared_ptr<grpc::CompletionQueue>& cq)
