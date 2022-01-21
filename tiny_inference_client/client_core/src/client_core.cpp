@@ -18,6 +18,11 @@ bool client_core::engine_ready_sync()
     return _impl->engine_ready_sync();
 }
 
+void client_core::engine_ready_async(const std::function<void(bool)>& callback)
+{
+    _impl->engine_ready_async(std::forward<decltype(callback)>(callback));
+}
+
 void client_core::engine_ready_async()
 {
     _impl->engine_ready_async();

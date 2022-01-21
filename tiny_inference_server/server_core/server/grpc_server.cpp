@@ -498,7 +498,7 @@ grpc_server::grpc_server(const std::shared_ptr<engine::engine_interface>& engine
 	const std::string port = "50051";
 	_server_uri = address + ":" + port;
 	_num_threads_inference_multi = 1;
-	_num_threads_inference_single = 4;
+	_num_threads_inference_single = 1;
 
 	// const std::string address = get_environment_variable("SERVER_ADDRESS", "0.0.0.0");
 	// const std::string port = get_environment_variable("SERVER_PORT", "50051");
@@ -537,6 +537,7 @@ void grpc_server::start()
 	_completion_queues.emplace("engine_queries_queue", builder.AddCompletionQueue());
 
 	_server = builder.BuildAndStart();
+	_is_running = true;
 	
 	// Multi (Batch) Inferece Call
 	for (auto thread_idx = 0; thread_idx < _num_threads_inference_multi; ++thread_idx)
@@ -567,8 +568,6 @@ void grpc_server::start()
 	spdlog::info("Server running @ {}", _server_uri);
 	spdlog::info("Single Inference Threads: {}", _num_threads_inference_single);
 	spdlog::info("Multi (Batch) Inference Threads: {}", _num_threads_inference_multi);
-
-	_is_running = true;
 }
 
 void grpc_server::stop()

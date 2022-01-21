@@ -109,9 +109,13 @@ struct AsyncClientBidiCall : public AsyncClientCallback<ResponseT>
 
 grpc_client::grpc_client(const std::string &channel_address)
 	: _stub{tie::InferenceService::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials()))}
+	, _is_bidi_stream_enabled{false}
 {
-	_bidi_completion_queue = std::make_unique<grpc::CompletionQueue>();
-	_bidi_grpc_thread = std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _bidi_completion_queue);
+	if (_is_bidi_stream_enabled)
+	{
+		_bidi_completion_queue = std::make_unique<grpc::CompletionQueue>();
+		_bidi_grpc_thread = std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq){ grpc_thread_worker(cq); }, _bidi_completion_queue);
+	}
 
 	_async_completion_queue = std::make_unique<grpc::CompletionQueue>();
 	for (auto thread_idx = 0; thread_idx < num_async_threads; ++thread_idx)
@@ -122,9 +126,12 @@ grpc_client::~grpc_client()
 {
 	std::cout << "Shutting down client" << std::endl;
 	
-	_bidi_completion_queue->Shutdown();		
-	if(_bidi_grpc_thread.joinable())
-		_bidi_grpc_thread.join();
+	if (_is_bidi_stream_enabled)
+	{
+		_bidi_completion_queue->Shutdown();		
+		if(_bidi_grpc_thread.joinable())
+			_bidi_grpc_thread.join();
+	}
 	
 	_async_completion_queue->Shutdown();
 	for (auto&& t : _async_grpc_threads)
@@ -134,70 +141,68 @@ grpc_client::~grpc_client()
 
 /*
 
-void grpc_client::start_infer_stream()
-{
-	if (_bidi_call && _bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::FINISH)
+	void grpc_client::start_infer_stream()
 	{
-		std::cout << "Warning: bidi call must be in write state before call read." << std::endl;;
-		return;
+		if (_bidi_call && _bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::FINISH)
+		{
+			std::cout << "Warning: bidi call must be in write state before call read." << std::endl;;
+			return;
+		}
+
+		_bidi_call = new AsyncClientBidiCall<tie::InferResponse>();
+		_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::CREATE;
+		// _bidi_call->set_response_callback([this](tie::InferResponse&& response){ result_callback(response); });
+		// _bidi_call->rpc = _stub->PrepareAsyncInferStream(&_bidi_call->context, _bidi_completion_queue.get());
+		_bidi_call->rpc->StartCall((void *)_bidi_call);
 	}
 
-	_bidi_call = new AsyncClientBidiCall<tie::InferResponse>();
-	_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::CREATE;
-	// _bidi_call->set_response_callback([this](tie::InferResponse&& response){ result_callback(response); });
-	// _bidi_call->rpc = _stub->PrepareAsyncInferStream(&_bidi_call->context, _bidi_completion_queue.get());
-	_bidi_call->rpc->StartCall((void *)_bidi_call);
-}
-
-void grpc_client::stop_infer_stream()
-{
-	_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::DONE;
-	_bidi_call->rpc->WritesDone((void *)_bidi_call);
-}
-
-void grpc_client::send_infer_stream_request(const std::string &msg, bool is_last)
-{
-	if (_bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::CREATE
-	&& _bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE)
+	void grpc_client::stop_infer_stream()
 	{
-		std::cout << "Warning: bidi call must be in CREATE or WRITE state before call WRITE." << std::endl;;
-		return;
+		_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::DONE;
+		_bidi_call->rpc->WritesDone((void *)_bidi_call);
 	}
 
-	_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE;
-	tie::InferRequest request;
-	// request.set_data(data);
-	// request.set_model_name(model_name);
-	// request.set_shape(shape);
-	
-	// TODO: check grpc::WriteOptions()
-	_bidi_call->rpc->Write(request, (void *)_bidi_call);
-}
-
-void grpc_client::read_infer_stream_response()
-{
-	if (_bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE)
+	void grpc_client::send_infer_stream_request(const std::string &msg, bool is_last)
 	{
-		std::cout << "Warning: BIDI call must be in write state before call read." << std::endl;;
-		return;
+		if (_bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::CREATE
+		&& _bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE)
+		{
+			std::cout << "Warning: bidi call must be in CREATE or WRITE state before call WRITE." << std::endl;;
+			return;
+		}
+
+		_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE;
+		tie::InferRequest request;
+		// request.set_data(data);
+		// request.set_model_name(model_name);
+		// request.set_shape(shape);
+		
+		// TODO: check grpc::WriteOptions()
+		_bidi_call->rpc->Write(request, (void *)_bidi_call);
 	}
-	
-	_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::READ;
-	_bidi_call->rpc->Read(&_bidi_call->response, (void *)_bidi_call);
-}
+
+	void grpc_client::read_infer_stream_response()
+	{
+		if (_bidi_call->call_state != AsyncClientBidiCall<tie::InferResponse>::CallState::WRITE)
+		{
+			std::cout << "Warning: BIDI call must be in write state before call read." << std::endl;;
+			return;
+		}
+		
+		_bidi_call->call_state = AsyncClientBidiCall<tie::InferResponse>::CallState::READ;
+		_bidi_call->rpc->Read(&_bidi_call->response, (void *)_bidi_call);
+	}
 
 */
-
-
 
 bool grpc_client::engine_ready_sync()
 {
 	std::cout << "engine_ready_sync" << std::endl;
 
 	grpc::ClientContext context;
-	tie::ModelReadyRequest request;
-	tie::ModelReadyResponse response;
-	grpc::Status status = _stub->ModelReady(&context, request, &response);
+	tie::EngineReadyRequest request;
+	tie::EngineReadyResponse response;
+	grpc::Status status = _stub->EngineReady(&context, request, &response);
 
 	if (status.ok())
 	{
@@ -211,6 +216,23 @@ bool grpc_client::engine_ready_sync()
 	return response.is_ready();
 }
 
+void grpc_client::engine_ready_async(const std::function<void(bool)>& callback)
+{
+	std::cout << "engine_ready_async" << std::endl;
+
+	tie::EngineReadyRequest request;
+
+	auto call = new AsyncClientUnaryCall<tie::EngineReadyResponse>();
+	call->set_response_callback([this](const tie::EngineReadyResponse& response)
+	{
+		_engine_ready_callback(response.is_ready());
+	});
+
+	call->rpc = _stub->PrepareAsyncEngineReady(&call->context, request, _async_completion_queue.get());
+	call->rpc->StartCall();
+	call->rpc->Finish(&call->response, &call->result_code, (void *)call);
+}
+
 void grpc_client::engine_ready_async()
 {
 	std::cout << "engine_ready_async" << std::endl;
@@ -218,11 +240,14 @@ void grpc_client::engine_ready_async()
 	tie::EngineReadyRequest request;
 
 	auto call = new AsyncClientUnaryCall<tie::EngineReadyResponse>();
+	call->set_response_callback([this](const tie::EngineReadyResponse& response)
+	{
+		_engine_ready_callback(response.is_ready());
+	});
+
 	call->rpc = _stub->PrepareAsyncEngineReady(&call->context, request, _async_completion_queue.get());
 	call->rpc->StartCall();
 	call->rpc->Finish(&call->response, &call->result_code, (void *)call);
-
-	_engine_ready_callback(call->response.is_ready());
 }
 
 void grpc_client::set_engine_ready_callback(const std::function<void(bool)>& callback)

@@ -27,6 +27,7 @@ public:
 	
 	bool engine_ready_sync();
 	void engine_ready_async();
+	void engine_ready_async(const std::function<void(bool)>& callback);
 	void set_engine_ready_callback(const std::function<void(bool)>& callback);
 
 	bool model_ready_sync();
@@ -45,14 +46,14 @@ private:
 	std::vector<std::thread> _async_grpc_threads;
 	std::shared_ptr<grpc::CompletionQueue> _async_completion_queue;
 
+	std::atomic_bool _is_bidi_stream_enabled;
 	std::thread _bidi_grpc_thread;
 	std::shared_ptr<grpc::CompletionQueue> _bidi_completion_queue;
 
 	// TODO: use unique_ptr, but check for double delete.
 	// AsyncClientBidiCall<tie::InferResponse>* _bidi_call = nullptr;
 
-	// TODO: Enable configuration 
-	unsigned num_async_completion_queues = 2u;
+	// TODO: Enable configuration
 	unsigned num_async_threads = 1u;
 };
 

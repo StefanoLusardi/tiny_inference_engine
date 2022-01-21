@@ -26,6 +26,7 @@ public:
 
 	bool engine_ready_sync();
 	void engine_ready_async();
+	void engine_ready_async(const std::function<void(bool)>& callback);
 	void set_engine_ready_callback(const std::function<void(bool)>& callback);
 
 	bool model_ready_sync();

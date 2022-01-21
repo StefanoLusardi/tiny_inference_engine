@@ -8,8 +8,6 @@ project(tiny_inference_engine
 )
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-
-message("System Info: " ${CMAKE_SYSTEM} ${CMAKE_SYSTEM_PROCESSOR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -30,9 +28,15 @@ endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 include(GNUInstallDirs)
+include(CMakeDependentOption)
 
 option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" ON)
+cmake_dependent_option(TIE_BUILD_CLIENT_UNIT_TESTS "Build Client Unit Tests" OFF "TIE_BUILD_CLIENT" OFF)
+cmake_dependent_option(TIE_BUILD_CLIENT_EXAMPLES "Build Client Examples" OFF "TIE_BUILD_CLIENT" OFF)
+
 option(TIE_BUILD_SERVER "Build Tiny Inference Engine Server" ON)
+cmake_dependent_option(TIE_BUILD_SERVER_UNIT_TESTS "Build Server Unit Tests" OFF "TIE_BUILD_SERVER" OFF)
+# cmake_dependent_option(TIE_BUILD_SERVER_EXAMPLES "Build Client Examples" OFF "TIE_BUILD_CLIENT" OFF)
 
 if(${TIE_BUILD_CLIENT})
     add_subdirectory(tiny_inference_client)
