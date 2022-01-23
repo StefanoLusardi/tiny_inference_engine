@@ -15,22 +15,22 @@ ENV CXX=g++-9
 COPY . /tie/
 
 FROM base as build
-WORKDIR /tie/
-RUN python3 /tie/scripts/download_onnxruntime.py --platform linux --package_version 1.10.0
+WORKDIR /tie/tiny_inference_server
+RUN python3 /tie/tiny_inference_server/scripts/download_onnxruntime.py --platform linux --package_version 1.10.0
 WORKDIR /tie/build/
-RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=Release -D UNIT_TESTS=OFF -D BUILD_SERVER=ON -D BUILD_CLIENT=OFF ..
+RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=Release -D TIE_BUILD_CLIENT=OFF -D TIE_BUILD_SERVER=ON ..
 RUN cmake --build . --config Release
 RUN cmake --install . --prefix /tie/install
 
 # FROM base as test
 # ENV BUILD_TYPE=Release
 # WORKDIR /tie/build
-# RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D UNIT_TESTS=ON -D BUILD_SERVER=ON -D BUILD_CLIENT=OFF .. && \
+# RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D TIE_BUILD_CLIENT=OFF -D TIE_BUILD_SERVER=ON -D TIE_BUILD_SERVER_UNIT_TEST=ON .. && \
 #     cmake --build . --config ${BUILD_TYPE}
 # ENTRYPOINT [ "ctest" ]
 
 FROM scratch as final
-COPY --from=build /tie/install/ /tie
+COPY --from=build /tie/install/server /tie
 COPY --from=build /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
 COPY --from=build /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
 COPY --from=build /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so.2

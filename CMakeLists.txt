@@ -14,10 +14,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
 set(CONAN_SYSTEM_INCLUDES ON)
 set(CONAN_CMAKE_SILENT_OUTPUT ON)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -32,11 +28,11 @@ include(CMakeDependentOption)
 
 option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" ON)
 cmake_dependent_option(TIE_BUILD_CLIENT_UNIT_TESTS "Build Client Unit Tests" OFF "TIE_BUILD_CLIENT" OFF)
-cmake_dependent_option(TIE_BUILD_CLIENT_EXAMPLES "Build Client Examples" OFF "TIE_BUILD_CLIENT" OFF)
+cmake_dependent_option(TIE_BUILD_CLIENT_EXAMPLES "Build Client Examples" ON "TIE_BUILD_CLIENT" OFF)
 
 option(TIE_BUILD_SERVER "Build Tiny Inference Engine Server" ON)
 cmake_dependent_option(TIE_BUILD_SERVER_UNIT_TESTS "Build Server Unit Tests" OFF "TIE_BUILD_SERVER" OFF)
-# cmake_dependent_option(TIE_BUILD_SERVER_EXAMPLES "Build Client Examples" OFF "TIE_BUILD_CLIENT" OFF)
+# cmake_dependent_option(TIE_BUILD_SERVER_EXAMPLES "Build Client Examples" ON "TIE_BUILD_CLIENT" OFF)
 
 if(${TIE_BUILD_CLIENT})
     add_subdirectory(tiny_inference_client)

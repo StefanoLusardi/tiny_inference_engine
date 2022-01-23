@@ -22,4 +22,4 @@ gtest_discover_tests(${TARGET_NAME})
 # include(sanitizers)
 # add_sanitizers(${TARGET_NAME})
 
-install(TARGETS ${TARGET_NAME} DESTINATION server/server_tests)
+install(TARGETS ${TARGET_NAME} DESTINATION server)

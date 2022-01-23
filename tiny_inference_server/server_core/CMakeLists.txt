@@ -69,7 +69,7 @@ elseif(APPLE)
     set(PLATFORM "macos")
 endif()
     
-set(ONNXRUNTIME_DIR ${CMAKE_SOURCE_DIR}/onnxruntime/${PLATFORM}${CUDA_PACKAGE_SUFFIX})
+set(ONNXRUNTIME_DIR ${CMAKE_SOURCE_DIR}/tiny_inference_server/onnxruntime/${PLATFORM}${CUDA_PACKAGE_SUFFIX})
 
 target_link_directories(${TARGET_NAME} 
     PRIVATE ${ONNXRUNTIME_DIR}/lib
@@ -91,8 +91,5 @@ target_link_libraries(${TARGET_NAME}
 # include(sanitizers)
 # add_sanitizers(engine)
 
-install(TARGETS ${TARGET_NAME} DESTINATION .)
-install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION .)
-
-install(TARGETS ${TARGET_NAME} DESTINATION server/server_core)
-install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION server/server_core)
+install(TARGETS ${TARGET_NAME} DESTINATION server)
+install(DIRECTORY ${ONNXRUNTIME_DIR}/lib/ DESTINATION server)
