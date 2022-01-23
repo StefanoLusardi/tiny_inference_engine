@@ -1,6 +1,5 @@
 trigger:
 - main
-- refactoring
 
 stages:
   - stage: Local
@@ -12,11 +11,6 @@ stages:
         strategy:
           maxParallel: 0
           matrix:
-
-            Ubuntu1804_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              OS_IMAGE: 'ubuntu-18.04'
 
             Ubuntu2004_gcc9:
               CC: gcc-9
@@ -55,10 +49,8 @@ stages:
             inputs:
               script: |
                 sudo apt update -y
-                sudo apt install -y --no-install-recommends make cmake python3.8 pip
-                sudo apt install -y ninja-build
+                sudo apt install -y --no-install-recommends make cmake python3.8 pip ninja-build
                 sudo pip install conan
-                echo ninja --version
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -71,7 +63,7 @@ stages:
               scriptSource: 'filePath'
               scriptPath: 'scripts/download_onnxruntime.py'
               arguments: '--platform linux'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -158,7 +150,7 @@ stages:
               scriptSource: 'filePath'
               scriptPath: 'scripts/download_onnxruntime.py'
               arguments: '--platform windows'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -197,9 +189,6 @@ stages:
         strategy:
           maxParallel: 0
           matrix:
-            
-            MacOS1014_clang11:
-              OS_IMAGE: 'macOS-10.14'
 
             MacOS1015_clang12:
               OS_IMAGE: 'macOS-10.15'
@@ -262,7 +251,7 @@ stages:
               scriptSource: 'filePath'
               scriptPath: 'scripts/download_onnxruntime.py'
               arguments: '--platform macos'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -306,7 +295,7 @@ stages:
           #   displayName: 'Build Unit Test'
           #   continueOnError: true
           #   inputs:
-          #     script: docker build -f server/Dockerfile --rm -t tie_server:latest --target test .
+          #     script: docker build -f tiny_inference_server/Dockerfile --rm -t tie_server:latest --target test .
           # - task: CmdLine@2
           #   displayName: 'Run Unit Test'
           #   continueOnError: true
@@ -315,7 +304,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Server'
             inputs:
-              script: docker build -f server/Dockerfile --rm -t tie_server:latest .
+              script: docker build -f tiny_inference_server/Dockerfile --rm -t tie_server:latest .
           - task: CmdLine@2
             displayName: 'Run & Shutdown Server (kill)'
             inputs:
@@ -341,7 +330,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Unit Test'
             inputs:
-              script: docker build -f client/Dockerfile --rm -t tie_client:latest --target test .
+              script: docker build -f tiny_inference_client/Dockerfile --rm -t tie_client:latest --target test .
           - task: CmdLine@2
             displayName: 'Run Unit Test'
             inputs:
@@ -349,5 +338,5 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Client'
             inputs:
-              script: docker build -f client/Dockerfile --rm -t tie_client:latest .
+              script: docker build -f tiny_inference_client/Dockerfile --rm -t tie_client:latest .
 
