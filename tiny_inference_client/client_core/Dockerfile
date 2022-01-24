@@ -17,8 +17,8 @@ COPY . /tie/
 
 FROM base as build
 WORKDIR /tie/build
-RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D UNIT_TESTS=OFF -D BUILD_SERVER=OFF -D BUILD_CLIENT=ON .. && \
-    cmake --build . --config ${BUILD_TYPE}
+RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D TIE_BUILD_SERVER=OFF -D TIE_BUILD_CLIENT=ON -D TIE_BUILD_SERVER_UNIT_TEST=ON ..
+RUN cmake --build . --config ${BUILD_TYPE}
 
 # FROM base as test
 # WORKDIR /tie/build
