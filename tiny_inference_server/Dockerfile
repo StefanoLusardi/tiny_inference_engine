@@ -40,5 +40,5 @@ COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libg
 COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.6
 COPY --from=build /lib/x86_64-linux-gnu/librt.so.1 /lib/x86_64-linux-gnu/librt.so.1
 
-ENTRYPOINT [ "./tie/server/tiny_inference_server" ]
+ENTRYPOINT [ "./tie/tiny_inference_server" ]
 
