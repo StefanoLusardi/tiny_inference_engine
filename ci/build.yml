@@ -63,7 +63,6 @@ stages:
               script: python scripts/download_onnxruntime.py --platform linux
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
-            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
@@ -149,7 +148,6 @@ stages:
               script: python scripts/download_onnxruntime.py --platform windows
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
-            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
@@ -254,7 +252,6 @@ stages:
               script: python scripts/download_onnxruntime.py --platform macos
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
-            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
