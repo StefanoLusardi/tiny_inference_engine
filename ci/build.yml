@@ -7,6 +7,7 @@ stages:
     jobs:
 
       - job: Linux
+        condition: False
         timeoutInMinutes: 0
         strategy:
           maxParallel: 0
@@ -114,14 +115,14 @@ stages:
             #   OS_IMAGE: 'windows-2022'
 
             Windows2019_mingw8:
-              CC: gcc
-              CXX: g++
+              CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+              CXX: C:\ProgramData\Chocolatey\bin\g++.exe
               SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
               OS_IMAGE: 'windows-2019'
             
             Windows2022_mingw11:
-              CC: gcc
-              CXX: g++
+              CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+              CXX: C:\ProgramData\Chocolatey\bin\g++.exe
               SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
               OS_IMAGE: 'windows-2022'
 
@@ -199,6 +200,7 @@ stages:
               testRunTitle: 'Test Results - $(Agent.JobName)'
 
       - job: MacOS
+        condition: False
         timeoutInMinutes: 0
         strategy:
           maxParallel: 0
