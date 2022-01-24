@@ -70,7 +70,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -104,13 +104,13 @@ stages:
             Windows2019_msvc2019:
               # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
               MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
-              SETUP_BUILD_ENV: call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2019'
 
             Windows2022_msvc2022:
               # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
               MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
-              SETUP_BUILD_ENV: call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2022'
 
             Windows2019_mingw8:
@@ -158,14 +158,14 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                "$(SETUP_BUILD_ENV)"
-                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+                $(SETUP_BUILD_ENV)
+                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                "$(SETUP_BUILD_ENV)"
+                $(SETUP_BUILD_ENV)
                 cmake --build . --config $(BUILD_TYPE)
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
@@ -261,7 +261,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
