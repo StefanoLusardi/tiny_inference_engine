@@ -60,19 +60,8 @@ stages:
           - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              script: |
-                echo $PWD
-                python --version
-                python3 scripts/download_onnxruntime.py --platform linux
+              script: python scripts/download_onnxruntime.py --platform linux
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
-
-          # - task: PythonScript@0
-          #   displayName: 'Install ONNX Runtime'
-          #   inputs:
-          #     scriptSource: 'filePath'
-          #     scriptPath: 'scripts/download_onnxruntime.py'
-          #     arguments: '--platform linux'
-          #     workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -153,12 +142,10 @@ stages:
               versionSpec: '3.8.x'
               addToPath: true
               architecture: 'x64'
-          - task: PythonScript@0
+          - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform windows'
+              script: python scripts/download_onnxruntime.py --platform windows
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
@@ -254,12 +241,10 @@ stages:
               versionSpec: '3.8.x'
               addToPath: true
               architecture: 'x64'
-          - task: PythonScript@0
+          - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform macos'
+              script: python scripts/download_onnxruntime.py --platform macos
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
