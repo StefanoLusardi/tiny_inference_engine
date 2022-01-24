@@ -63,6 +63,7 @@ stages:
               script: python scripts/download_onnxruntime.py --platform linux
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
+            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
@@ -70,7 +71,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G "Ninja" -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -148,6 +149,7 @@ stages:
               script: python scripts/download_onnxruntime.py --platform windows
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
+            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
@@ -155,16 +157,21 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
+                # call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
               script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
+                # call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
               script: |
-                call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64
                 cmake --build . --config $(BUILD_TYPE)
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Install'
+            inputs:
+              script: cmake --install . --prefix "$(BUILD_DIRECTORY)/install"
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Unit Test'
@@ -247,6 +254,7 @@ stages:
               script: python scripts/download_onnxruntime.py --platform macos
               workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
+            condition: False
             displayName: 'Create Build Folder'
             inputs:
               script: mkdir build
@@ -260,6 +268,11 @@ stages:
             displayName: 'Build'
             inputs:
               script: cmake --build . --config $(BUILD_TYPE)
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Install'
+            inputs:
+              script: cmake --install . --prefix "$(BUILD_DIRECTORY)/install"
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Unit Test'
