@@ -154,6 +154,10 @@ stages:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
+          - task: CmdLine@2
+            displayName: 'Update conan profile'
+            inputs:
+              script: |
                 conan profile update settings.compiler.libcxx=libstdc++11 default
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
