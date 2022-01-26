@@ -25,8 +25,8 @@ RUN cmake --install . --prefix /tie/install
 # FROM base as test
 # ENV BUILD_TYPE=Release
 # WORKDIR /tie/build
-# RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D TIE_BUILD_CLIENT=OFF -D TIE_BUILD_SERVER=ON -D TIE_BUILD_SERVER_UNIT_TEST=ON .. && \
-#     cmake --build . --config ${BUILD_TYPE}
+# RUN cmake -G Ninja -D CMAKE_BUILD_TYPE=${BUILD_TYPE} -D TIE_BUILD_CLIENT=OFF -D TIE_BUILD_SERVER=ON -D TIE_BUILD_SERVER_UNIT_TEST=ON ..
+# RUN cmake --build . --config ${BUILD_TYPE}
 # ENTRYPOINT [ "ctest" ]
 
 FROM scratch as final
@@ -40,5 +40,5 @@ COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libg
 COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.6
 COPY --from=build /lib/x86_64-linux-gnu/librt.so.1 /lib/x86_64-linux-gnu/librt.so.1
 
-ENTRYPOINT [ "./tie/server" ]
+ENTRYPOINT [ "./tie/tiny_inference_server" ]
 
