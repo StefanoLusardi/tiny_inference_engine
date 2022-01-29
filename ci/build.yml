@@ -70,7 +70,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -133,31 +133,11 @@ stages:
 
         steps:
           - task: CmdLine@2
-            displayName: 'Env vars'
-            inputs:
-              script: |
-                set
-                echo @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                where gcc
-                echo @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                where g++
-                echo @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                gcc --version
-                echo @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                g++ --version
-                echo @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-          - task: CmdLine@2
             displayName: 'Install Build Tools'
             inputs:
               script: |
                 choco install --accept-license -y Ninja
                 pip install conan
-          - task: CmdLine@2
-            displayName: 'Update conan profile'
-            inputs:
-              script: |
-                conan profile update settings.compiler.libcxx=libstdc++11 default
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -179,7 +159,7 @@ stages:
             inputs:
               script: |
                 $(SETUP_BUILD_ENV)
-                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
+                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -261,7 +241,7 @@ stages:
             inputs:
               script: |
                 brew install ninja
-                pipx install conan
+                pip install conan
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
@@ -281,7 +261,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_SERVER=OFF ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
