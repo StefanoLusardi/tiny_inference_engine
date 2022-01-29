@@ -7,7 +7,6 @@ stages:
     jobs:
 
       - job: Linux
-        condition: False
         timeoutInMinutes: 0
         strategy:
           maxParallel: 0
@@ -102,29 +101,29 @@ stages:
         strategy:
           maxParallel: 0
           matrix:
-            # Windows2019_msvc2019:
-            #   # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
-            #   MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
-            #   SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
-            #   OS_IMAGE: 'windows-2019'
-
-            # Windows2022_msvc2022:
-            #   # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
-            #   MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
-            #   SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
-            #   OS_IMAGE: 'windows-2022'
-
-            Windows2019_mingw8:
-              CC: C:\ProgramData\Chocolatey\bin\gcc.exe
-              CXX: C:\ProgramData\Chocolatey\bin\g++.exe
-              SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+            Windows2019_msvc2019:
+              # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
+              MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2019'
-            
-            Windows2022_mingw11:
-              CC: C:\ProgramData\Chocolatey\bin\gcc.exe
-              CXX: C:\ProgramData\Chocolatey\bin\g++.exe
-              SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+
+            Windows2022_msvc2022:
+              # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
+              MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2022'
+
+            # Windows2019_mingw8:
+            #   CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+            #   CXX: C:\ProgramData\Chocolatey\bin\g++.exe
+            #   SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+            #   OS_IMAGE: 'windows-2019'
+            
+            # Windows2022_mingw11:
+            #   CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+            #   CXX: C:\ProgramData\Chocolatey\bin\g++.exe
+            #   SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+            #   OS_IMAGE: 'windows-2022'
 
         pool:
           vmImage: $(OS_IMAGE)
@@ -209,7 +208,6 @@ stages:
               testRunTitle: 'Test Results - $(Agent.JobName)'
 
       - job: MacOS
-        condition: False
         timeoutInMinutes: 0
         strategy:
           maxParallel: 0
@@ -218,38 +216,38 @@ stages:
             MacOS1015_clang12:
               OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc9:
+            #   CC: gcc-9
+            #   CXX: g++-9
+            #   OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc10:
-              CC: gcc-10
-              CXX: g++-10
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc10:
+            #   CC: gcc-10
+            #   CXX: g++-10
+            #   OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc11:
-              CC: gcc-11
-              CXX: g++-11
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc11:
+            #   CC: gcc-11
+            #   CXX: g++-11
+            #   OS_IMAGE: 'macOS-10.15'
 
             MacOS11_clang13:
               OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc9:
+            #   CC: gcc-9
+            #   CXX: g++-9
+            #   OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc10:
-              CC: gcc-10
-              CXX: g++-10
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc10:
+            #   CC: gcc-10
+            #   CXX: g++-10
+            #   OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc11:
-              CC: gcc-11
-              CXX: g++-11
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc11:
+            #   CC: gcc-11
+            #   CXX: g++-11
+            #   OS_IMAGE: 'macOS-11'
 
         pool:
           vmImage: $(OS_IMAGE)
