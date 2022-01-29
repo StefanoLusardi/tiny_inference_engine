@@ -292,6 +292,7 @@ stages:
     dependsOn: []
     jobs:
       - job: Server
+        condition: False
         displayName: Tiny Inference Engine - Server
         timeoutInMinutes: 5
         pool:
