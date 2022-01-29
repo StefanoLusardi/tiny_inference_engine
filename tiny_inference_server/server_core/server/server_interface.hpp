@@ -1,6 +1,6 @@
 #pragma once
 
-namespace tie::engine
+namespace tie::server
 {
 struct server_interface
 {

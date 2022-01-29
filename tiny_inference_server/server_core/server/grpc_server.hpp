@@ -1,6 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <atomic>
 #include <thread>
+#include <vector>
+#include <map>
+#include <string_view>
+#include <string>
 
 #include <grpcpp/grpcpp.h>
 #include <services.grpc.pb.h>
@@ -10,7 +16,7 @@
 
 namespace tie::server
 {
-class grpc_server final : public engine::server_interface
+class grpc_server final : public tie::server::server_interface
 {
 public:
 	explicit grpc_server(const std::shared_ptr<engine::engine_interface>& engine_ptr);

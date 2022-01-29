@@ -6,11 +6,9 @@
 #include "shutdown.hpp"
 #include "parser.hpp"
 #include "config.hpp"
-#include "server_manager.hpp"
 #include "engine.hpp"
 
-#include "../server/grpc_server.hpp"
-#include "../server/http_server.hpp"
+#include "../server/server_manager.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -31,15 +29,14 @@ int run(int argc, char** argv)
         spdlog::set_level(spdlog::level::from_str(cli.log_level()));
         cli.dump();
 
-        std::shared_ptr<engine_interface> engine_ptr = std::make_shared<engine>();
+        auto engine_ptr = std::make_shared<engine>();
+        auto server_manager = tie::server::server_manager(engine_ptr);
 
-        server_manager<tie::server::grpc_server> grpc_server_manager;
         if(cli.is_grpc_server_enabled())
-            grpc_server_manager.run(engine_ptr, cli.get_config());
-
-        server_manager<tie::server::http_server> http_server_manager;
+            server_manager.run(tie::server::server_type::grpc); //, cli.get_config());
+        
         if(cli.is_http_server_enabled())
-            http_server_manager.run(engine_ptr, cli.get_config());
+            server_manager.run(tie::server::server_type::http); //,cli.get_config());
 
         unsigned int t = 0;
         while (!shutdown_engine())
@@ -54,7 +51,7 @@ int run(int argc, char** argv)
         spdlog::error("unhandled error: {}", e.what());
     }
 
-    spdlog::info("shutting down xyz infernce engine");
+    spdlog::info("shutting down tie infernce server");
     return EXIT_SUCCESS;
 }
 }

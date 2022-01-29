@@ -1,6 +1,5 @@
 #include "engine.hpp"
 
-#include "../backend/backend_interface.hpp"
 #include "../backend/onnx_backend.hpp"
 
 #include <spdlog/spdlog.h>

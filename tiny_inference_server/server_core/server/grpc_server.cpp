@@ -1,17 +1,4 @@
-#include <cstddef>
-#include <functional>
-#include <ios>
-#include <mutex>
-#include <vector>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <thread>
-#include <condition_variable>
-// TODO: check includes
-
 #include "grpc_server.hpp"
-#include "services.pb.h"
 #include <spdlog/spdlog.h>
 
 using namespace std::chrono_literals;
@@ -491,6 +478,7 @@ private:
 
 grpc_server::grpc_server(const std::shared_ptr<engine::engine_interface>& engine_ptr)
 	: _engine_ptr{engine_ptr}
+    , _is_running {false}
 {
 	spdlog::trace("creating grpc_server");
 

@@ -23,7 +23,6 @@ set(TARGET_SRC
     engine/shutdown.cpp
     engine/engine.hpp
     engine/engine.cpp
-    engine/server_manager.hpp
 
     backend/backend_interface.hpp
     backend/infer_request.hpp
@@ -33,6 +32,8 @@ set(TARGET_SRC
 
     ${GRPC_PROTO_FILES}
     server/server_interface.hpp
+    server/server_manager.hpp
+    server/server_manager.cpp
     server/grpc_server.hpp
     server/grpc_server.cpp
     server/http_server.hpp
