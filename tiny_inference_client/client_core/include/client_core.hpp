@@ -33,6 +33,10 @@ public:
 	void model_ready_async();
 	void set_model_ready_callback(const std::function<void(bool)>& callback);
 
+	bool infer_sync();
+	void infer_async();
+	void set_infer_callback(const std::function<void(bool)>& callback);
+
 private:	
 	std::unique_ptr<tie::client_core::grpc_client> _impl;
 };

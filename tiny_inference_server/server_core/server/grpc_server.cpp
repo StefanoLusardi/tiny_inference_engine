@@ -336,7 +336,7 @@ public:
 				new SingleInferenceCall(_service, _cq, _engine_ptr);
 				
 				backend::infer_request request;
-				// request.data = _io.request.data();
+				request.data = {_io.request.data().cbegin(), _io.request.data().cend()};
 				request.model_name = _io.request.model_name();
 				request.shape = {_io.request.shape().begin(), _io.request.shape().end()};
 				spdlog::trace("SingleInferenceCall - PROCESS - Request - Model: {}", request.model_name);

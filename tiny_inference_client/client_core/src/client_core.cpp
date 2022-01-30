@@ -48,6 +48,20 @@ void client_core::set_model_ready_callback(const std::function<void(bool)>& call
     _impl->set_model_ready_callback(std::forward<decltype(callback)>(callback));
 }
 
+bool client_core::infer_sync()
+{
+    return _impl->infer_sync();
+}
+
+void client_core::infer_async()
+{
+    _impl->infer_async();
+}
+
+void client_core::set_infer_callback(const std::function<void(bool)>& callback)
+{
+    _impl->set_infer_callback(std::forward<decltype(callback)>(callback));
+}
 
 
 /*

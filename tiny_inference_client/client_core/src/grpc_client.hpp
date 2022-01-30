@@ -34,6 +34,10 @@ public:
 	void model_ready_async();
 	void set_model_ready_callback(const std::function<void(bool)>& callback);
 
+	bool infer_sync();
+	void infer_async();
+	void set_infer_callback(const std::function<void(bool)>& callback);
+
 protected:
 	std::function<void(bool)> _engine_ready_callback;
 	std::function<void(bool)> _model_ready_callback;

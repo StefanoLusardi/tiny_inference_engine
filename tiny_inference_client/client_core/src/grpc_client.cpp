@@ -318,35 +318,41 @@ void grpc_client::grpc_thread_worker(const std::shared_ptr<grpc::CompletionQueue
 	}
 }
 
-// void grpc_client::unary_sync()
-// {
-// 	std::cout << "Unary Sync call" << std::endl;
-// 	tie::InferRequest request;
-// 	request.set_name("Sync");
-// 	tie::InferResponse reply;
-// 	grpc::Status status;
-// 	grpc::ClientContext context;
-// 	status = _stub->SayHello(&context, request, &reply);
-// 	if (status.ok())
-// 		std::cout << reply.message() << std::endl;
-// 	else
-// 		std::cout << "RPC failed: (" << status.error_code() << ") " << status.error_message() << std::endl;
-// }
+bool grpc_client::infer_sync()
+{
+	std::cout << "infer_sync" << std::endl;
 
-// void grpc_client::unary_async()
-// {
-// 	std::cout << "Unary Async call" << std::endl;
-// 	tie::InferRequest request;
-// 	request.set_name("Async");
-// 	auto call = new AsyncClientUnaryCall<tie::InferResponse>();
-// 	call->rpc = _stub->PrepareAsyncSayHello(&call->context, request, _async_completion_queue.get());
-// 	call->rpc->StartCall();
-// 	call->rpc->Finish(&call->response, &call->result_code, (void *)call);
-// }
+	tie::InferRequest request;
+	// request.set_data();
+	// request.set_model();
 
-// void grpc_client::result_callback(tie::InferResponse response)
-// {
-// 	std::cout << "result_callback:" << response.message() << std::endl;
-// }
+	tie::InferResponse reply;
+	grpc::ClientContext context;
+
+	grpc::Status status = _stub->Infer(&context, request, &reply);
+	if (status.ok())
+		std::cout << reply.error_message() << std::endl;
+	else
+		std::cout << "RPC failed: (" << status.error_code() << ") " << status.error_message() << std::endl;
+
+	return true;
+}
+
+void grpc_client::infer_async()
+{
+	std::cout << "infer_async" << std::endl;
+	
+	// tie::InferRequest request;
+	// request.set_name("Async");
+	// auto call = new AsyncClientUnaryCall<tie::InferResponse>();
+	// call->rpc = _stub->PrepareAsyncSayHello(&call->context, request, _async_completion_queue.get());
+	// call->rpc->StartCall();
+	// call->rpc->Finish(&call->response, &call->result_code, (void *)call);
+}
+
+void grpc_client::set_infer_callback(const std::function<void(bool)>& callback)
+{
+	// std::cout << "result_callback:" << response.message() << std::endl;
+}
 
 }
