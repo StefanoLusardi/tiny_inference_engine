@@ -57,13 +57,11 @@ stages:
               versionSpec: '3.8.x'
               addToPath: true
               architecture: 'x64'
-          - task: PythonScript@0
+          - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform linux'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              script: python scripts/download_onnxruntime.py --platform linux
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -106,24 +104,26 @@ stages:
             Windows2019_msvc2019:
               # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
               MSVC_DEV_ENV: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat"
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2019'
 
             Windows2022_msvc2022:
               # see: https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md#visual-studio-enterprise-2022
               MSVC_DEV_ENV: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat"
+              SETUP_BUILD_ENV: 'call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64'
               OS_IMAGE: 'windows-2022'
 
-            Windows2019_mingw8:
-              CC: gcc
-              CXX: g++
-              MSVC_DEV_ENV: ""
-              OS_IMAGE: 'windows-2019'
+            # Windows2019_mingw8:
+            #   CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+            #   CXX: C:\ProgramData\Chocolatey\bin\g++.exe
+            #   SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+            #   OS_IMAGE: 'windows-2019'
             
-            Windows2022_mingw11:
-              CC: gcc
-              CXX: g++
-              MSVC_DEV_ENV: ""
-              OS_IMAGE: 'windows-2022'
+            # Windows2022_mingw11:
+            #   CC: C:\ProgramData\Chocolatey\bin\gcc.exe
+            #   CXX: C:\ProgramData\Chocolatey\bin\g++.exe
+            #   SETUP_BUILD_ENV: 'set PATH=%PATH%;C:\msys64'
+            #   OS_IMAGE: 'windows-2022'
 
         pool:
           vmImage: $(OS_IMAGE)
@@ -144,13 +144,11 @@ stages:
               versionSpec: '3.8.x'
               addToPath: true
               architecture: 'x64'
-          - task: PythonScript@0
+          - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform windows'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              script: python scripts/download_onnxruntime.py --platform windows
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -160,15 +158,20 @@ stages:
             displayName: 'Configure'
             inputs:
               script: |
-                if NOT "$(MSVC_DEV_ENV)"=="" (call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64) else (echo Build with MinGW)
+                $(SETUP_BUILD_ENV)
                 cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
             inputs:
               script: |
-                if NOT "$(MSVC_DEV_ENV)"=="" (call "$(MSVC_DEV_ENV)" -arch=amd64 -host_arch=amd64) else (echo Build with MinGW)
+                $(SETUP_BUILD_ENV)
                 cmake --build . --config $(BUILD_TYPE)
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Install'
+            inputs:
+              script: cmake --install . --prefix "$(BUILD_DIRECTORY)/install"
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Unit Test'
@@ -193,38 +196,38 @@ stages:
             MacOS1015_clang12:
               OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc9:
+            #   CC: gcc-9
+            #   CXX: g++-9
+            #   OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc10:
-              CC: gcc-10
-              CXX: g++-10
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc10:
+            #   CC: gcc-10
+            #   CXX: g++-10
+            #   OS_IMAGE: 'macOS-10.15'
 
-            MacOS1015_gcc11:
-              CC: gcc-11
-              CXX: g++-11
-              OS_IMAGE: 'macOS-10.15'
+            # MacOS1015_gcc11:
+            #   CC: gcc-11
+            #   CXX: g++-11
+            #   OS_IMAGE: 'macOS-10.15'
 
             MacOS11_clang13:
               OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc9:
-              CC: gcc-9
-              CXX: g++-9
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc9:
+            #   CC: gcc-9
+            #   CXX: g++-9
+            #   OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc10:
-              CC: gcc-10
-              CXX: g++-10
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc10:
+            #   CC: gcc-10
+            #   CXX: g++-10
+            #   OS_IMAGE: 'macOS-11'
 
-            MacOS11_gcc11:
-              CC: gcc-11
-              CXX: g++-11
-              OS_IMAGE: 'macOS-11'
+            # MacOS11_gcc11:
+            #   CC: gcc-11
+            #   CXX: g++-11
+            #   OS_IMAGE: 'macOS-11'
 
         pool:
           vmImage: $(OS_IMAGE)
@@ -238,20 +241,18 @@ stages:
             inputs:
               script: |
                 brew install ninja
-                pip install conan
+                pipx install conan
           - task: UsePythonVersion@0
             displayName: 'Set Python3'
             inputs:
               versionSpec: '3.8.x'
               addToPath: true
               architecture: 'x64'
-          - task: PythonScript@0
+          - task: CmdLine@2
             displayName: 'Install ONNX Runtime'
             inputs:
-              scriptSource: 'filePath'
-              scriptPath: 'scripts/download_onnxruntime.py'
-              arguments: '--platform macos'
-              workingDirectory: '$(Build.SourcesDirectory)'
+              script: python scripts/download_onnxruntime.py --platform macos
+              workingDirectory: '$(Build.SourcesDirectory)/tiny_inference_server'
           - task: CmdLine@2
             displayName: 'Create Build Folder'
             inputs:
@@ -266,6 +267,11 @@ stages:
             displayName: 'Build'
             inputs:
               script: cmake --build . --config $(BUILD_TYPE)
+              workingDirectory: $(BUILD_DIRECTORY)
+          - task: CmdLine@2
+            displayName: 'Install'
+            inputs:
+              script: cmake --install . --prefix "$(BUILD_DIRECTORY)/install"
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Unit Test'
@@ -286,6 +292,7 @@ stages:
     dependsOn: []
     jobs:
       - job: Server
+        condition: False
         displayName: Tiny Inference Engine - Server
         timeoutInMinutes: 5
         pool:
@@ -295,7 +302,7 @@ stages:
           #   displayName: 'Build Unit Test'
           #   continueOnError: true
           #   inputs:
-          #     script: docker build -f server/Dockerfile --rm -t tie_server:latest --target test .
+          #     script: docker build -f tiny_inference_server/Dockerfile --rm -t tie_server:latest --target test .
           # - task: CmdLine@2
           #   displayName: 'Run Unit Test'
           #   continueOnError: true
@@ -304,7 +311,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Server'
             inputs:
-              script: docker build -f server/Dockerfile --rm -t tie_server:latest .
+              script: docker build -f tiny_inference_server/Dockerfile --rm -t tie_server:latest .
           - task: CmdLine@2
             displayName: 'Run & Shutdown Server (kill)'
             inputs:
@@ -330,7 +337,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Unit Test'
             inputs:
-              script: docker build -f client/Dockerfile --rm -t tie_client:latest --target test .
+              script: docker build -f tiny_inference_client/Dockerfile --rm -t tie_client:latest --target test .
           - task: CmdLine@2
             displayName: 'Run Unit Test'
             inputs:
@@ -338,5 +345,5 @@ stages:
           - task: CmdLine@2
             displayName: 'Build Client'
             inputs:
-              script: docker build -f client/Dockerfile --rm -t tie_client:latest .
+              script: docker build -f tiny_inference_client/Dockerfile --rm -t tie_client:latest .
 
