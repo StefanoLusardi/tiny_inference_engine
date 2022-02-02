@@ -24,11 +24,15 @@ set(TARGET_SRC
     engine/engine.hpp
     engine/engine.cpp
 
-    backend/backend_interface.hpp
-    backend/infer_request.hpp
-    backend/infer_response.hpp
+    backend/include/backend_interface.hpp
+    backend/include/infer_request.hpp
+    backend/include/infer_response.hpp
+    backend/include/backend_factory.hpp
+    backend/backend_factory.cpp
     backend/onnx_backend.hpp
     backend/onnx_backend.cpp
+    backend/pytorch_backend.hpp
+    backend/pytorch_backend.cpp
 
     ${GRPC_PROTO_FILES}
     server/server_interface.hpp
@@ -78,6 +82,7 @@ target_link_directories(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME}
     PUBLIC engine/include
+    PUBLIC backend/include
     PRIVATE ${PROTO_OUT_DIR}
     PRIVATE ${ONNXRUNTIME_DIR}/include
 )

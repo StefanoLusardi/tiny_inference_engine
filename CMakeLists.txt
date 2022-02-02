@@ -31,7 +31,7 @@ cmake_dependent_option(TIE_BUILD_CLIENT_EXAMPLES "Build Client Examples" ON "TIE
 cmake_dependent_option(TIE_BUILD_CLIENT_UNIT_TESTS "Build Client Unit Tests" OFF "TIE_BUILD_CLIENT" OFF)
 
 option(TIE_BUILD_SERVER "Build Tiny Inference Engine Server" ON)
-# cmake_dependent_option(TIE_BUILD_SERVER_EXAMPLES "Build Client Examples" ON "TIE_BUILD_CLIENT" OFF)
+cmake_dependent_option(TIE_BUILD_SERVER_EXAMPLES "Build Client Examples" ON "TIE_BUILD_CLIENT" OFF)
 cmake_dependent_option(TIE_BUILD_SERVER_UNIT_TESTS "Build Server Unit Tests" OFF "TIE_BUILD_SERVER" OFF)
 
 if(${TIE_BUILD_CLIENT})

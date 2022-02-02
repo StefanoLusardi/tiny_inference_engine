@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string_view>
-#include "../backend/infer_request.hpp"
-#include "../backend/infer_response.hpp"
+#include "infer_request.hpp"
+#include "infer_response.hpp"
 
 namespace tie::engine
 {

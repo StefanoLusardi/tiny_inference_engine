@@ -5,6 +5,8 @@
 
 namespace tie::backend
 {
+enum class type { null, onnx, pytorch };
+
 class backend_interface
 {
 public:

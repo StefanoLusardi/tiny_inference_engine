@@ -1,12 +1,12 @@
 #include "engine.hpp"
 
-#include "../backend/onnx_backend.hpp"
+#include "backend_factory.hpp"
 
 #include <spdlog/spdlog.h>
 
 namespace tie::engine
 {
-engine::engine() : _backend { std::make_unique<tie::backend::onnx_backend>()}
+engine::engine() : _backend { tie::backend::backend_factory::create(tie::backend::type::onnx) }
 {
     spdlog::trace("creating engine");
 }
