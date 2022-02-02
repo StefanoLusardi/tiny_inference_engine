@@ -33,6 +33,8 @@ set(TARGET_SRC
     backend/onnx_backend.cpp
     backend/pytorch_backend.hpp
     backend/pytorch_backend.cpp
+    backend/null_backend.hpp
+    backend/null_backend.cpp
 
     ${GRPC_PROTO_FILES}
     server/server_interface.hpp

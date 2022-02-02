@@ -7,13 +7,11 @@
 namespace tie::backend
 {
 onnx_backend::onnx_backend() noexcept
-    : _env{std::make_unique<Ort::Env>(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "onnxruntime_backend") }
+    : _env{ std::make_unique<Ort::Env>(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "onnxruntime_backend") }
 {
 }
 
-onnx_backend::~onnx_backend()
-{
-}
+onnx_backend::~onnx_backend() {}
 
 bool onnx_backend::register_models(const std::vector<std::string_view>& models)
 {
@@ -38,14 +36,14 @@ bool onnx_backend::register_models(const std::vector<std::string_view>& models)
         auto model_name_str = std::basic_string<ORTCHAR_T>(model_name.begin(), model_name.end());
         auto session = std::make_unique<Ort::Session>(*_env, model_name_str.c_str(), session_options);
 
-        for(auto idx = 0; idx < session->GetInputCount(); ++idx)
+        for (auto idx = 0; idx < session->GetInputCount(); ++idx)
         {
             const auto name = session->GetInputName(idx, allocator);
             const auto shape = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
             session_info.inputs.emplace_back(name, shape);
         }
 
-        for(auto idx = 0; idx < session->GetInputCount(); ++idx)
+        for (auto idx = 0; idx < session->GetInputCount(); ++idx)
         {
             const auto name = session->GetOutputName(idx, allocator);
             const auto shape = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
@@ -60,7 +58,7 @@ bool onnx_backend::register_models(const std::vector<std::string_view>& models)
 }
 
 infer_response onnx_backend::infer(const infer_request& request)
-{ 
+{
     const auto request_model = _model_sessions.find(request.model_name);
     if (request_model == _model_sessions.end())
     {
@@ -68,10 +66,7 @@ infer_response onnx_backend::infer(const infer_request& request)
         return {};
     }
 
-    const auto vector_product = [](const std::vector<int64_t>& v) -> int64_t
-    {
-        return std::accumulate(v.begin(), v.end(), 1ll, std::multiplies<int64_t>());
-    };
+    const auto vector_product = [](const std::vector<int64_t>& v) -> int64_t { return std::accumulate(v.begin(), v.end(), 1ll, std::multiplies<int64_t>()); };
 
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
@@ -81,7 +76,7 @@ infer_response onnx_backend::infer(const infer_request& request)
     {
         const auto input_name = request_model->second.inputs[idx].name;
         input_names.push_back(input_name);
-        
+
         const auto input_shape = request_model->second.inputs[idx].shape;
         const auto input_tensor_size = vector_product(input_shape);
         std::vector<float> input_tensor_values(input_tensor_size);
@@ -105,13 +100,10 @@ infer_response onnx_backend::infer(const infer_request& request)
     }
 
     const auto session = request_model->second.session.get();
-    session->Run(Ort::RunOptions{ nullptr },
-        input_names.data(), input_data.data(), input_data.size(),
-        output_names.data(), output_data.data(), output_data.size());
+    session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
 
     return {};
 }
-
 
 /*
     Ort::AllocatorWithDefaultOptions allocator;
@@ -145,6 +137,5 @@ infer_response onnx_backend::infer(const infer_request& request)
         }
     }
 */
-
 
 }

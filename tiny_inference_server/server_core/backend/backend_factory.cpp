@@ -7,7 +7,7 @@
 
 namespace tie::backend
 {
-static std::unique_ptr<tie::backend::backend_interface> create(const tie::backend::type backend_type)
+std::unique_ptr<tie::backend::backend_interface> backend_factory::create(const tie::backend::type backend_type)
 {
     switch (backend_type)
     {

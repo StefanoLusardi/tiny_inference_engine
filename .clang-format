@@ -1,8 +1,12 @@
----
+﻿---
 BasedOnStyle: Mozilla
 AccessModifierOffset: '-4'
 AlignAfterOpenBracket: DontAlign
 AlignConsecutiveMacros: 'true'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortIfStatementsOnASingleLine: Always
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: 'true'
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 BreakBeforeBraces: Allman
@@ -10,15 +14,24 @@ ColumnLimit: '180'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
 FixNamespaceComments: 'false'
+IndentCaseLabels: 'true'
 IndentWidth: '4'
 KeepEmptyLinesAtTheStartOfBlocks: 'false'
 Language: Cpp
 MaxEmptyLinesToKeep: '1'
+PointerAlignment: Left
 ReflowComments: 'false'
 SortIncludes: 'false'
 SortUsingDeclarations: 'false'
 SpaceBeforeAssignmentOperators: 'true'
+SpaceBeforeInheritanceColon: 'true'
+SpaceBeforeRangeBasedForLoopColon: 'true'
+SpaceInEmptyParentheses: 'false'
 SpacesBeforeTrailingComments: '2'
+SpacesInAngles: 'false'
+SpacesInParentheses: 'false'
+SpacesInSquareBrackets: 'false'
 Standard: Auto
+UseTab: Never
 
 ...
