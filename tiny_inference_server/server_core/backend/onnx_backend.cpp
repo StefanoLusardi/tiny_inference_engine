@@ -1,5 +1,7 @@
 #include "onnx_backend.hpp"
-#include <onnxruntime_cxx_api.h>
+#include "infer_response.hpp"
+#include "onnxruntime_c_api.h"
+#include <cstdint>
 
 #include <spdlog/spdlog.h>
 // #include <spdlog/fmt/ostr.h>
@@ -13,7 +15,7 @@ onnx_backend::onnx_backend() noexcept
 
 onnx_backend::~onnx_backend() {}
 
-bool onnx_backend::register_models(const std::vector<std::string_view>& models)
+bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 {
     Ort::SessionOptions session_options;
 
@@ -40,14 +42,16 @@ bool onnx_backend::register_models(const std::vector<std::string_view>& models)
         {
             const auto name = session->GetInputName(idx, allocator);
             const auto shape = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
-            session_info.inputs.emplace_back(name, shape);
+            const auto type = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
+            session_info.inputs.emplace_back(name, shape, type);
         }
 
-        for (auto idx = 0; idx < session->GetInputCount(); ++idx)
+        for (auto idx = 0; idx < session->GetOutputCount(); ++idx)
         {
             const auto name = session->GetOutputName(idx, allocator);
             const auto shape = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
-            session_info.outputs.emplace_back(name, shape);
+            const auto type = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
+            session_info.outputs.emplace_back(name, shape, type);
         }
 
         session_info.session = std::move(session);
@@ -72,37 +76,71 @@ infer_response onnx_backend::infer(const infer_request& request)
 
     std::vector<const char*> input_names;
     std::vector<Ort::Value> input_data;
+    int idx = 0;
     for (auto idx = 0; idx < request_model->second.inputs.size(); ++idx)
     {
         const auto input_name = request_model->second.inputs[idx].name;
         input_names.push_back(input_name);
 
+        const auto input_type = request_model->second.inputs[idx].type;
+
         const auto input_shape = request_model->second.inputs[idx].shape;
         const auto input_tensor_size = vector_product(input_shape);
-        std::vector<float> input_tensor_values(input_tensor_size);
-        input_tensor_values.assign(request.data.begin(), request.data.end());
 
-        input_data.push_back(Ort::Value::CreateTensor<float>(memory_info, input_tensor_values.data(), input_tensor_size, input_shape.data(), input_shape.size()));
+        input_data.push_back(Ort::Value::CreateTensor(memory_info, (void*)request.data.data(), 4 * input_tensor_size, input_shape.data(), input_shape.size(), input_type));
     }
 
     std::vector<const char*> output_names;
-    std::vector<Ort::Value> output_data;
     for (auto idx = 0; idx < request_model->second.outputs.size(); ++idx)
     {
         const auto output_name = request_model->second.outputs[idx].name;
         output_names.push_back(output_name);
-
-        const auto output_shape = request_model->second.outputs[idx].shape;
-        const auto output_tensor_size = vector_product(output_shape);
-        std::vector<float> output_tensor_values(output_tensor_size);
-
-        output_data.push_back(Ort::Value::CreateTensor<float>(memory_info, output_tensor_values.data(), output_tensor_size, output_shape.data(), output_shape.size()));
     }
 
-    const auto session = request_model->second.session.get();
-    session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
+    /*
+        // std::vector<float> output_tensor_values(output_tensor_size);
+        // output_data.push_back(Ort::Value::CreateTensor<float>(memory_info, output_tensor_values.data(), output_tensor_size, output_shape.data(), output_shape.size()));
+        // switch (output_type)
+        // {
+        //     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+        //     {
+        //         std::vector<float> output_tensor_values(output_tensor_size);
+        //         output_tensor_values.size();
+        //         output_data.push_back(Ort::Value::CreateTensor(
+        //             memory_info, (void*)output_tensor_values.data(), sizeof(float) * output_tensor_size, output_shape.data(), output_shape.size(), output_type));
+        //         break;
+        //     }
+        //     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
+        //     {
+        //         std::vector<uint8_t> output_tensor_values(output_tensor_size);
+        //         output_data.push_back(Ort::Value::CreateTensor(
+        //             memory_info, (void*)output_tensor_values.data(), sizeof(uint8_t) * output_tensor_size, output_shape.data(), output_shape.size(), output_type));
+        //         break;
+        //     }
+        //     default: break;
+        // }
+        // }
+    */
 
-    return {};
+    // prediction_score: 24.1335
+    // prediction_index : 232
+
+    const auto session = request_model->second.session.get();
+    // session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
+
+    std::vector<Ort::Value> output_data =
+        session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_names.size());
+
+    infer_response response;
+
+    for (auto idx = 0; idx < request_model->second.outputs.size(); ++idx)
+    {
+        const float* out_data = output_data[idx].GetTensorData<float>();
+        size_t count = output_data[idx].GetTensorTypeAndShapeInfo().GetElementCount();
+        std::vector<float> output(out_data, out_data + count);
+    }
+
+    return response;
 }
 
 /*

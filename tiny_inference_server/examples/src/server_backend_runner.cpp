@@ -1,19 +1,20 @@
 #include "backend_factory.hpp"
 #include "infer_request.hpp"
+#include <opencv2/core/hal/interface.h>
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char** argv)
 {
-    auto backend = tie::backend::backend_factory::create(tie::backend::type::onnx);
-    // backend->load_model();
-
     std::string imageFilepath{ "images/dog.jpg" };
     std::string labelFilepath{ "labels/synset.txt" };
     std::string modelFilepath{ "models/squeezenet1.1-7.onnx" };
 
+    auto backend = tie::backend::backend_factory::create(tie::backend::type::onnx);
+    backend->load_models({ modelFilepath });
+
     cv::Mat imageBGR = cv::imread(imageFilepath, cv::ImreadModes::IMREAD_COLOR);
-    cv::imshow("resizedImage", imageBGR);
-    cv::waitKey(0);
+    // cv::imshow("resizedImage", imageBGR);
+    // cv::waitKey(0);
 
     cv::Mat resizedImageBGR, resizedImageRGB, resizedImage, preprocessedImage;
 
@@ -23,8 +24,8 @@ int main(int argc, char** argv)
     cv::cvtColor(resizedImageBGR, resizedImageRGB, cv::ColorConversionCodes::COLOR_BGR2RGB);
     resizedImageRGB.convertTo(resizedImage, CV_32F, 1.0 / 255);
 
-    cv::imshow("resizedImage", resizedImage);
-    cv::waitKey(0);
+    // cv::imshow("resizedImage", resizedImage);
+    // cv::waitKey(0);
 
     cv::Mat channels[3];
     cv::split(resizedImage, channels);
@@ -35,16 +36,16 @@ int main(int argc, char** argv)
     channels[2] = (channels[2] - 0.406) / 0.225;
     cv::merge(channels, 3, resizedImage);
 
-    cv::imshow("resizedImage", resizedImage);
-    cv::waitKey(0);
+    // cv::imshow("resizedImage", resizedImage);
+    // cv::waitKey(0);
 
     // HWC to CHW
     cv::dnn::blobFromImage(resizedImage, preprocessedImage);
 
-    std::vector<uint8_t> input_data = { preprocessedImage.datastart, preprocessedImage.dataend };
-
-    // auto request = tie::backend::infer_request();
-    // auto response = backend->infer(request);
+    auto request = tie::backend::infer_request();
+    request.data = { preprocessedImage.datastart, preprocessedImage.dataend };
+    request.model_name = modelFilepath;
+    auto response = backend->infer(request);
 
     return EXIT_SUCCESS;
 }

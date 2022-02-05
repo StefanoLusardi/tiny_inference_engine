@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 
+#include <onnxruntime_cxx_api.h>
+
 // #if defined(WIN32)
 // #pragma push(disable : C4244)
 // #endif
@@ -18,23 +20,39 @@
 // #pragma pop
 // #endif
 
-namespace Ort
-{
-    struct Env;
-    struct Session;
-}
-
 namespace tie::backend
 {
+
+template<ONNXTensorElementDataType>
+struct GetTensorType;
+
+template<>
+struct GetTensorType<ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT>
+{
+    using type = float;
+};
+
+template<>
+struct GetTensorType<ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8>
+{
+    using type = uint8_t;
+};
+
 class onnx_backend : public backend_interface
 {
     struct session_info
     {
         struct model_info
         {
-            explicit model_info(const char* name, const std::vector<int64_t>& shape) : name{name}, shape{shape} { }
+            explicit model_info(const char* name, const std::vector<int64_t>& shape, ONNXTensorElementDataType type)
+                : name{ name }
+                , shape{ shape }
+                , type{ type }
+            {
+            }
             const char* name;
             std::vector<int64_t> shape;
+            ONNXTensorElementDataType type;
         };
 
         std::vector<model_info> inputs;
@@ -45,7 +63,7 @@ class onnx_backend : public backend_interface
 public:
     explicit onnx_backend() noexcept;
     ~onnx_backend();
-    bool register_models(const std::vector<std::string_view>& models);
+    bool load_models(const std::vector<std::string_view>& models) override;
     infer_response infer(const infer_request& request) override;
 
 private:
