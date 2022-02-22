@@ -345,7 +345,7 @@ public:
 
                 const backend::infer_response response = _engine_ptr->infer(request);
 
-                _io.response.set_data(response.data.data());
+                // _io.response.set_data(response.data.data());
                 _io.response.set_error_message("");
                 spdlog::trace("SingleInferenceCall - PROCESS - Response - Model: {}", request.model_name);
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <spdlog/spdlog.h>
+#include <vector>
 // #include <spdlog/fmt/ostr.h>
 
 namespace tie::backend
@@ -91,53 +92,28 @@ infer_response onnx_backend::infer(const infer_request& request)
     }
 
     std::vector<const char*> output_names;
+    std::vector<Ort::Value> output_data;
     for (auto idx = 0; idx < request_model->second.outputs.size(); ++idx)
     {
         const auto output_name = request_model->second.outputs[idx].name;
         output_names.push_back(output_name);
+
+        output_data.emplace_back(nullptr);
     }
 
-    /*
-        // std::vector<float> output_tensor_values(output_tensor_size);
-        // output_data.push_back(Ort::Value::CreateTensor<float>(memory_info, output_tensor_values.data(), output_tensor_size, output_shape.data(), output_shape.size()));
-        // switch (output_type)
-        // {
-        //     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
-        //     {
-        //         std::vector<float> output_tensor_values(output_tensor_size);
-        //         output_tensor_values.size();
-        //         output_data.push_back(Ort::Value::CreateTensor(
-        //             memory_info, (void*)output_tensor_values.data(), sizeof(float) * output_tensor_size, output_shape.data(), output_shape.size(), output_type));
-        //         break;
-        //     }
-        //     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
-        //     {
-        //         std::vector<uint8_t> output_tensor_values(output_tensor_size);
-        //         output_data.push_back(Ort::Value::CreateTensor(
-        //             memory_info, (void*)output_tensor_values.data(), sizeof(uint8_t) * output_tensor_size, output_shape.data(), output_shape.size(), output_type));
-        //         break;
-        //     }
-        //     default: break;
-        // }
-        // }
-    */
-
-    // prediction_score: 24.1335
-    // prediction_index : 232
-
     const auto session = request_model->second.session.get();
-    // session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
-
-    std::vector<Ort::Value> output_data =
-        session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_names.size());
+    session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
 
     infer_response response;
 
     for (auto idx = 0; idx < request_model->second.outputs.size(); ++idx)
     {
-        const float* out_data = output_data[idx].GetTensorData<float>();
-        size_t count = output_data[idx].GetTensorTypeAndShapeInfo().GetElementCount();
-        std::vector<float> output(out_data, out_data + count);
+        void** tensor_data = output_data[idx].GetTensorMutableData<void*>();
+        size_t tensor_count = output_data[idx].GetTensorTypeAndShapeInfo().GetElementCount();
+        std::vector<int64_t> tensor_shape = output_data[idx].GetTensorTypeAndShapeInfo().GetShape();
+
+        infer_response::tensor_info tensor_info{ tensor_data, tensor_count, tensor_shape, data_type::dt_float_dt };
+        response.tensors.emplace(output_names[idx], std::move(tensor_info));
     }
 
     return response;

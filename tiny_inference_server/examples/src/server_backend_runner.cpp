@@ -1,7 +1,13 @@
-#include "backend_factory.hpp"
-#include "infer_request.hpp"
-#include <opencv2/core/hal/interface.h>
+#include "infer_response.hpp"
+#include <backend_factory.hpp>
+#include <infer_request.hpp>
 #include <opencv2/opencv.hpp>
+
+template<typename T>
+constexpr std::vector<T> get_response_tensor(const tie::backend::infer_response::tensor_info& tensor_info)
+{
+    return std::vector<T>{ (T*)tensor_info.data, (T*)tensor_info.data + tensor_info.count };
+};
 
 int main(int argc, char** argv)
 {
@@ -45,7 +51,12 @@ int main(int argc, char** argv)
     auto request = tie::backend::infer_request();
     request.data = { preprocessedImage.datastart, preprocessedImage.dataend };
     request.model_name = modelFilepath;
+
     auto response = backend->infer(request);
+    auto response_tensor = get_response_tensor<float>(response.tensors.at("squeezenet0_flatten0_reshape0"));
 
     return EXIT_SUCCESS;
 }
+
+// prediction_score: 24.1335
+// prediction_index : 232

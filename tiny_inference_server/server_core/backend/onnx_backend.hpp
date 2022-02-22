@@ -23,21 +23,6 @@
 namespace tie::backend
 {
 
-template<ONNXTensorElementDataType>
-struct GetTensorType;
-
-template<>
-struct GetTensorType<ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT>
-{
-    using type = float;
-};
-
-template<>
-struct GetTensorType<ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8>
-{
-    using type = uint8_t;
-};
-
 class onnx_backend : public backend_interface
 {
     struct session_info
