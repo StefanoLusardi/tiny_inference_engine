@@ -116,7 +116,7 @@ infer_response onnx_backend::infer(const infer_request& request)
         response.tensors.emplace(output_names[idx], std::move(tensor_info));
     }
 
-    return response;
+    return std::move(response);
 }
 
 /*

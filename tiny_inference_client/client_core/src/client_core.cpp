@@ -4,14 +4,13 @@
 
 namespace tie::client_core
 {
-    
-client_core::client_core(const std::string &channel_address) : _impl{ std::make_unique<tie::client_core::grpc_client>(channel_address) }
+
+client_core::client_core(const std::string& channel_address)
+    : _impl{ std::make_unique<tie::client_core::grpc_client>(channel_address) }
 {
 }
 
-client_core::~client_core()
-{
-}
+client_core::~client_core() {}
 
 bool client_core::engine_ready_sync()
 {
@@ -48,9 +47,9 @@ void client_core::set_model_ready_callback(const std::function<void(bool)>& call
     _impl->set_model_ready_callback(std::forward<decltype(callback)>(callback));
 }
 
-bool client_core::infer_sync()
+bool client_core::infer_sync(const tie::infer_request& infer_request)
 {
-    return _impl->infer_sync();
+    return _impl->infer_sync(infer_request);
 }
 
 void client_core::infer_async()
@@ -62,7 +61,6 @@ void client_core::set_infer_callback(const std::function<void(bool)>& callback)
 {
     _impl->set_infer_callback(std::forward<decltype(callback)>(callback));
 }
-
 
 /*
 
@@ -119,6 +117,5 @@ void client_core::read_infer_stream_response()
 }
 
 */
-
 
 }
