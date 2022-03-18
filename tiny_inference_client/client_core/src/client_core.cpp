@@ -32,6 +32,16 @@ void client_core::set_engine_ready_callback(const std::function<void(bool)>& cal
     _impl->set_engine_ready_callback(std::forward<decltype(callback)>(callback));
 }
 
+bool client_core::load_model(const std::string& model_name) const
+{
+    return _impl->load_model(model_name);
+}
+
+bool client_core::unload_model(const std::string& model_name) const
+{
+    return _impl->unload_model(model_name);
+}
+
 bool client_core::model_ready_sync()
 {
     return _impl->model_ready_sync();
@@ -47,7 +57,7 @@ void client_core::set_model_ready_callback(const std::function<void(bool)>& call
     _impl->set_model_ready_callback(std::forward<decltype(callback)>(callback));
 }
 
-bool client_core::infer_sync(const tie::infer_request& infer_request)
+tie::infer_response client_core::infer_sync(const tie::infer_request& infer_request)
 {
     return _impl->infer_sync(infer_request);
 }

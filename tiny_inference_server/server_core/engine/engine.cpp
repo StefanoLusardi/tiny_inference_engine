@@ -29,8 +29,7 @@ bool engine::is_model_ready(const std::string_view& model_name) const
 
 bool engine::load_model(const std::string_view& model_name) const
 {
-    // _backend->load_model(model_name);
-    return true;
+    return _backend->load_models({model_name});
 }
 
 bool engine::unload_model(const std::string_view& model_name) const

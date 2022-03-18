@@ -58,14 +58,27 @@ message UnloadModelResponse {
 
 // Infer
 message InferRequest {
-  repeated float data = 1;
+  bytes data = 1;
   string model_name = 2;
   repeated int64 shape = 3;
 }
 
 message InferResponse {
-  string data = 1;
-  string error_message = 2;
+  message TensorInfo{
+    enum data_type {
+      dt_float = 0;
+      dt_uint8 = 1;
+    }
+
+    bytes data = 1;
+    uint64 count = 2;
+    repeated int64 shape = 3;
+    data_type type = 4;
+  }
+
+  map<string, TensorInfo> tensors = 1;
+  string model_name = 2;
+  string error_message = 3;
 }
 
 // InferStream

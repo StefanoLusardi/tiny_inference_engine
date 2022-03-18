@@ -33,11 +33,14 @@ public:
     void engine_ready_async(const std::function<void(bool)>& callback);
     void set_engine_ready_callback(const std::function<void(bool)>& callback);
 
+    bool load_model(const std::string& model_name) const;
+    bool unload_model(const std::string& model_name) const;
+
     bool model_ready_sync();
     void model_ready_async();
     void set_model_ready_callback(const std::function<void(bool)>& callback);
 
-    bool infer_sync(const tie::infer_request& infer_request);
+    tie::infer_response infer_sync(const tie::infer_request& infer_request);
     void infer_async();
     void set_infer_callback(const std::function<void(bool)>& callback);
 

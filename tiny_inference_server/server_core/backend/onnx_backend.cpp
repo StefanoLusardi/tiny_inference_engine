@@ -18,6 +18,10 @@ onnx_backend::~onnx_backend() {}
 
 bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 {
+    spdlog::info("Loading Models");
+    for(auto&& model : models)
+        spdlog::info(" - {}", model);
+
     Ort::SessionOptions session_options;
 
 #if defined(WITH_CUDA)
@@ -34,6 +38,12 @@ bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 
     for (auto model_name : models)
     {
+        if (_model_sessions.find(std::string(model_name)) != _model_sessions.end())
+        {
+            spdlog::warn("Model {} already loaded", model_name);
+            continue;
+        }
+
         onnx_backend::session_info session_info;
 
         auto model_name_str = std::basic_string<ORTCHAR_T>(model_name.begin(), model_name.end());
@@ -64,7 +74,12 @@ bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 
 infer_response onnx_backend::infer(const infer_request& request)
 {
-    const auto request_model = _model_sessions.find(request.model_name);
+    spdlog::info("infer model: {}", request.model_name);
+
+    for (auto& m : _model_sessions)
+        spdlog::info("{}", m.first);
+
+    const auto request_model = _model_sessions.find(std::string(request.model_name));
     if (request_model == _model_sessions.end())
     {
         spdlog::warn("Model {} not registered", request.model_name);

@@ -53,7 +53,7 @@ public:
 
 private:
     std::unique_ptr<Ort::Env> _env;
-    std::map<std::string_view, session_info> _model_sessions;
+    std::map<std::string, session_info> _model_sessions;
 };
 
 }

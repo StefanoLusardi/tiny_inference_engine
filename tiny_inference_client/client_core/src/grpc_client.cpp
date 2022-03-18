@@ -1,4 +1,6 @@
 #include "grpc_client.hpp"
+#include "infer_response.hpp"
+#include "services.pb.h"
 
 #include <iostream>
 
@@ -240,6 +242,24 @@ void grpc_client::set_engine_ready_callback(const std::function<void(bool)>& cal
     // std::cout << "engine_ready_async callback. engine is ready: " << response.is_ready() << std::endl;
 }
 
+bool grpc_client::load_model(const std::string& model_name) const
+{
+    grpc::ClientContext context;
+    tie::ModelLoadRequest request;
+    request.set_model_name(model_name);
+    
+    tie::ModelLoadResponse response;
+
+    grpc::Status status = _stub->LoadModel(&context, request, &response);
+
+    return true;
+}
+
+bool grpc_client::unload_model(const std::string& model_name) const
+{
+    return true;
+}
+
 bool grpc_client::model_ready_sync()
 {
     std::cout << "model_ready_sync" << std::endl;
@@ -302,23 +322,37 @@ void grpc_client::grpc_thread_worker(const std::shared_ptr<grpc::CompletionQueue
     }
 }
 
-bool grpc_client::infer_sync(const tie::infer_request& infer_request)
+tie::infer_response grpc_client::infer_sync(const tie::infer_request& infer_request)
 {
     std::cout << "infer_sync" << std::endl;
 
     tie::InferRequest request;
-    // request.set_data();
-    // request.set_model();
+    request.set_data(infer_request.data.data(), infer_request.data.size());
+    request.set_model_name(infer_request.model_name.data(), infer_request.model_name.size());
 
-    tie::InferResponse reply;
+    tie::InferResponse response;
     grpc::ClientContext context;
 
-    grpc::Status status = _stub->Infer(&context, request, &reply);
-    if (status.ok()) std::cout << reply.error_message() << std::endl;
+    grpc::Status status = _stub->Infer(&context, request, &response);
+    if (status.ok())
+        std::cout << response.error_message() << std::endl;
     else
         std::cout << "RPC failed: (" << status.error_code() << ") " << status.error_message() << std::endl;
 
-    return true;
+    tie::infer_response infer_response;
+
+    auto n = "squeezenet0_flatten0_reshape0";
+    for (auto&& [tensor_name, tensor_info] : response.tensors())
+    {
+        infer_response.tensors.emplace(n, tie::infer_response::tensor_info{});
+
+        infer_response.tensors[n].data = (void*)tensor_info.data().data();
+        infer_response.tensors[n].count = tensor_info.count();
+        infer_response.tensors[n].shape = { tensor_info.shape().begin(), tensor_info.shape().end() };
+        infer_response.tensors[n].type = static_cast<tie::data_type>(tensor_info.type());
+    }
+
+    return infer_response;
 }
 
 void grpc_client::infer_async()

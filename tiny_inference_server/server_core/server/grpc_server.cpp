@@ -1,4 +1,5 @@
 #include "grpc_server.hpp"
+#include "services.pb.h"
 #include <spdlog/spdlog.h>
 
 using namespace std::chrono_literals;
@@ -223,7 +224,7 @@ public:
 
             case CallState::FINISH:
                 spdlog::debug("LoadModelAsyncCall - FINISH");
-                lock.unlock();
+                // lock.unlock();
                 delete this;
                 break;
 
@@ -338,14 +339,27 @@ public:
                 new SingleInferenceCall(_service, _cq, _engine_ptr);
 
                 backend::infer_request request;
-                // request.data = {_io.request.data().cbegin(), _io.request.data().cend()};
+                request.data = {_io.request.data().cbegin(), _io.request.data().cend()};
                 request.model_name = _io.request.model_name();
                 request.shape = { _io.request.shape().begin(), _io.request.shape().end() };
-                spdlog::trace("SingleInferenceCall - PROCESS - Request - Model: {}", request.model_name);
+                
+                spdlog::trace("SingleInferenceCall - PROCESS - Request - Model: {} - Data size: {}", request.model_name, request.data.size());
 
-                const backend::infer_response response = _engine_ptr->infer(request);
+                backend::infer_response response = _engine_ptr->infer(request);
 
-                // _io.response.set_data(response.data.data());
+                for (auto [tensor_name, tensor_info] : response.tensors)
+                {
+                    tie::InferResponse::TensorInfo response_tensor_info;
+
+                    auto data = response_tensor_info.mutable_data();
+                    *data = std::string(static_cast<char*>(tensor_info.data), static_cast<char*>(tensor_info.data) + tensor_info.count);
+                    response_tensor_info.set_count(tensor_info.count);
+                    response_tensor_info.mutable_shape()->Assign(tensor_info.shape.begin(), tensor_info.shape.end() );                    
+                    response_tensor_info.set_type(tie::InferResponse::TensorInfo::data_type(tensor_info.type));
+
+                    (*_io.response.mutable_tensors())[tensor_name] = response_tensor_info;
+                }
+
                 _io.response.set_error_message("");
                 spdlog::trace("SingleInferenceCall - PROCESS - Response - Model: {}", request.model_name);
 

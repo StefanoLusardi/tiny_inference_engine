@@ -3,11 +3,16 @@
 #include <client_core.hpp>
 #include <opencv2/opencv.hpp>
 
+
+template<typename T>
+constexpr std::vector<T> get_response_tensor(const tie::infer_response::tensor_info& tensor_info)
+{
+    return std::vector<T>{ (T*)tensor_info.data, (T*)tensor_info.data + tensor_info.count };
+};
+
 int main(int argc, char** argv)
 {
-    std::cout << "Running client_example_model_info"
-              << "\n"
-              << std::endl;
+    std::cout << "Running client_example_model_info" << "\n" << std::endl;
     tie::client_core::client_core client("localhost:50051");
 
     std::string imageFilepath{ "images/dog.jpg" };
@@ -41,15 +46,13 @@ int main(int argc, char** argv)
     // HWC to CHW
     cv::dnn::blobFromImage(resizedImage, preprocessedImage);
 
-    // client.infer_sync();
-    std::string modelFilepath = "";
-
     auto request = tie::infer_request();
-
     request.data = { preprocessedImage.datastart, preprocessedImage.dataend };
-    request.model_name = modelFilepath;
+    request.model_name = "models/squeezenet1.1-7.onnx";
 
+    client.load_model(std::string(request.model_name));
     auto response = client.infer_sync(request);
+    auto response_tensor = get_response_tensor<float>(response.tensors.at("squeezenet0_flatten0_reshape0"));
 
     return EXIT_SUCCESS;
 }
