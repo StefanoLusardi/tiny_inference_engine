@@ -70,7 +70,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF -D TIE_BUILD_SERVER_EXAMPLES=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -159,7 +159,7 @@ stages:
             inputs:
               script: |
                 $(SETUP_BUILD_ENV)
-                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+                cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF -D TIE_BUILD_SERVER_EXAMPLES=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
@@ -261,7 +261,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF -D TIE_BUILD_SERVER_EXAMPLES=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
