@@ -291,7 +291,8 @@ public:
                 delete this;
                 break;
 
-            default: spdlog::error("UnloadModelAsyncCall - Unexpected tag: {}", int(_call_state)); assert(false);
+            default: 
+                spdlog::error("UnloadModelAsyncCall - Unexpected tag: {}", int(_call_state)); assert(false);
         }
 
         return true;
@@ -529,9 +530,11 @@ void grpc_server::start()
     // builder.SetDefaultCompressionLevel(GRPC_COMPRESS_LEVEL_HIGH);
     // builder.SetDefaultCompressionAlgorithm(GRPC_COMPRESS_GZIP);
 
-    if (_num_threads_inference_multi > 0) _completion_queues.emplace("multi_inference_queue", builder.AddCompletionQueue());
+    // if (_num_threads_inference_multi > 0)
+    //     _completion_queues.emplace("multi_inference_queue", builder.AddCompletionQueue());
 
-    if (_num_threads_inference_single > 0) _completion_queues.emplace("single_inference_queue", builder.AddCompletionQueue());
+    // if (_num_threads_inference_single > 0)
+    //     _completion_queues.emplace("single_inference_queue", builder.AddCompletionQueue());
 
     _completion_queues.emplace("engine_queries_queue", builder.AddCompletionQueue());
 
@@ -539,26 +542,26 @@ void grpc_server::start()
     _is_running = true;
 
     // Multi (Batch) Inferece Call
-    for (auto thread_idx = 0; thread_idx < _num_threads_inference_multi; ++thread_idx)
-    {
-        const auto cq = _completion_queues.at("multi_inference_queue");
-        //new BatchInferenceCall<tie::InferRequest, tie::InferResponse>(_service, cq, _engine_ptr);
-        _server_threads.emplace_back([this](const auto& cq) { grpc_thread_worker(cq); }, cq);
-    }
+    // for (auto thread_idx = 0; thread_idx < _num_threads_inference_multi; ++thread_idx)
+    // {
+    //     const auto cq = _completion_queues.at("multi_inference_queue");
+    //     new BatchInferenceCall<tie::InferRequest, tie::InferResponse>(_service, cq, _engine_ptr);
+    //     _server_threads.emplace_back([this](const auto& cq) { grpc_thread_worker(cq); }, cq);
+    // }
 
     // Single Inferece Call
-    for (auto thread_idx = 0; thread_idx < _num_threads_inference_single; ++thread_idx)
-    {
-        const auto cq = _completion_queues.at("single_inference_queue");
-        new SingleInferenceCall(_service, cq, _engine_ptr);
-        _server_threads.emplace_back([this](const auto& cq) { grpc_thread_worker(cq); }, cq);
-    }
+    // for (auto thread_idx = 0; thread_idx < _num_threads_inference_single; ++thread_idx)
+    // {
+    //     const auto cq = _completion_queues.at("single_inference_queue");
+    //     new SingleInferenceCall(_service, cq, _engine_ptr);
+    //     _server_threads.emplace_back([this](const auto& cq) { grpc_thread_worker(cq); }, cq);
+    // }
 
     // Engine Queries Calls
     {
         const auto cq = _completion_queues.at("engine_queries_queue");
-        new EngineReadyAsyncCall(_service, cq, _engine_ptr);
-        new ModelReadyAsyncCall(_service, cq, _engine_ptr);
+    //     new EngineReadyAsyncCall(_service, cq, _engine_ptr);
+    //     new ModelReadyAsyncCall(_service, cq, _engine_ptr);
         new LoadModelAsyncCall(_service, cq, _engine_ptr);
         new UnloadModelAsyncCall(_service, cq, _engine_ptr);
         _server_threads.emplace_back([this](const auto& cq) { grpc_thread_worker(cq); }, cq);

@@ -39,7 +39,8 @@ int run(int argc, char** argv)
             server_manager.run(tie::server::server_type::http); //,cli.get_config());
 
         unsigned int t = 0;
-        while (!shutdown_engine())
+        // while (!shutdown_engine())
+        while (t<3)
         {
             // engine loop
             std::this_thread::sleep_for(1s);

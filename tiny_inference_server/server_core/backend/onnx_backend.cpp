@@ -1,20 +1,21 @@
 #include "onnx_backend.hpp"
 #include "infer_response.hpp"
-#include "onnxruntime_c_api.h"
-#include <cstdint>
+#include "onnxruntime_cxx_api.h"
 
 #include <spdlog/spdlog.h>
 #include <vector>
-// #include <spdlog/fmt/ostr.h>
 
 namespace tie::backend
 {
 onnx_backend::onnx_backend() noexcept
     : _env{ std::make_unique<Ort::Env>(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "onnxruntime_backend") }
+    , _allocator { std::make_shared<Ort::AllocatorWithDefaultOptions>()}
 {
 }
 
-onnx_backend::~onnx_backend() {}
+onnx_backend::~onnx_backend() 
+{
+}
 
 bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 {
@@ -34,8 +35,6 @@ bool onnx_backend::load_models(const std::vector<std::string_view>& models)
     session_options.SetIntraOpNumThreads(1);
     session_options.SetInterOpNumThreads(1);
 
-    Ort::AllocatorWithDefaultOptions allocator;
-
     for (auto model_name : models)
     {
         if (_model_sessions.find(std::string(model_name)) != _model_sessions.end())
@@ -51,18 +50,18 @@ bool onnx_backend::load_models(const std::vector<std::string_view>& models)
 
         for (auto idx = 0; idx < session->GetInputCount(); ++idx)
         {
-            const auto name = session->GetInputName(idx, allocator);
+            char* name = session->GetInputName(idx, *_allocator);
             const auto shape = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
             const auto type = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
-            session_info.inputs.emplace_back(name, shape, type);
+            session_info.inputs.emplace_back(name, shape, type, _allocator);
         }
 
         for (auto idx = 0; idx < session->GetOutputCount(); ++idx)
         {
-            const auto name = session->GetOutputName(idx, allocator);
+            char* name = session->GetOutputName(idx, *_allocator);
             const auto shape = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
             const auto type = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
-            session_info.outputs.emplace_back(name, shape, type);
+            session_info.outputs.emplace_back(name, shape, type, _allocator);
         }
 
         session_info.session = std::move(session);
@@ -116,8 +115,8 @@ infer_response onnx_backend::infer(const infer_request& request)
         output_data.emplace_back(nullptr);
     }
 
-    const auto session = request_model->second.session.get();
-    session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
+    // auto session = request_model->second.session.get();
+    request_model->second.session->Run(Ort::RunOptions{ nullptr }, input_names.data(), input_data.data(), input_data.size(), output_names.data(), output_data.data(), output_data.size());
 
     infer_response response;
 

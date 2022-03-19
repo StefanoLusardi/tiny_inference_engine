@@ -26,6 +26,11 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
 
+# TODO: add cmake option.
+if(UNIX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif()
+
 option(TIE_BUILD_CLIENT "Build Tiny Inference Engine Client" ON)
 cmake_dependent_option(TIE_BUILD_CLIENT_EXAMPLES "Build Client Examples" ON "TIE_BUILD_CLIENT" OFF)
 cmake_dependent_option(TIE_BUILD_CLIENT_UNIT_TESTS "Build Client Unit Tests" OFF "TIE_BUILD_CLIENT" OFF)

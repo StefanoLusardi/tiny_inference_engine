@@ -29,15 +29,24 @@ class onnx_backend : public backend_interface
     {
         struct model_info
         {
-            explicit model_info(const char* name, const std::vector<int64_t>& shape, ONNXTensorElementDataType type)
+            explicit model_info(char* name, const std::vector<int64_t>& shape, ONNXTensorElementDataType type, const std::shared_ptr<Ort::AllocatorWithDefaultOptions>& allocator)
                 : name{ name }
                 , shape{ shape }
                 , type{ type }
+                , _allocator {allocator}
             {
             }
-            const char* name;
+
+            ~model_info()
+            {
+                _allocator->Free(name);
+            }
+
+
+            char* name;
             std::vector<int64_t> shape;
             ONNXTensorElementDataType type;
+            std::shared_ptr<Ort::AllocatorWithDefaultOptions> _allocator;
         };
 
         std::vector<model_info> inputs;
@@ -53,6 +62,7 @@ public:
 
 private:
     std::unique_ptr<Ort::Env> _env;
+    std::shared_ptr<Ort::AllocatorWithDefaultOptions> _allocator;
     std::map<std::string, session_info> _model_sessions;
 };
 
