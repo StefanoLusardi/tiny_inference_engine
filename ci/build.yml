@@ -70,7 +70,7 @@ stages:
           - task: CmdLine@2
             displayName: 'Configure'
             inputs:
-              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF..
+              script: cmake -G Ninja -D CMAKE_BUILD_TYPE=$(BUILD_TYPE) -D TIE_BUILD_CLIENT_EXAMPLES=OFF ..
               workingDirectory: $(BUILD_DIRECTORY)
           - task: CmdLine@2
             displayName: 'Build'
