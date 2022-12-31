@@ -5,14 +5,16 @@ service GRPCInferenceService
 {
     rpc ServerLive(ServerLiveRequest) returns (ServerLiveResponse) {}
     rpc ServerReady(ServerReadyRequest) returns (ServerReadyResponse) {}
-    rpc ServerMetadata(ServerMetadataRequest) returns (ServerMetadataResponse) {}
-    
     rpc ModelReady(ModelReadyRequest) returns (ModelReadyResponse) {}
-    rpc ModelList(ModelListRequest) returns (ModelListResponse) {}
+    rpc ServerMetadata(ServerMetadataRequest) returns (ServerMetadataResponse) {}
     rpc ModelMetadata(ModelMetadataRequest) returns (ModelMetadataResponse) {}
+    rpc ModelInfer(ModelInferRequest) returns (ModelInferResponse) {}
     rpc ModelLoad(ModelLoadRequest) returns (ModelLoadResponse) {}
     rpc ModelUnload(ModelUnloadRequest) returns (ModelUnloadResponse) {}
-    rpc ModelInfer(ModelInferRequest) returns (ModelInferResponse) {}
+    rpc WorkerLoad(WorkerLoadRequest) returns (WorkerLoadResponse) {}
+    rpc WorkerUnload(WorkerUnloadRequest) returns (WorkerUnloadResponse) {}
+    rpc ModelList(ModelListRequest) returns (ModelListResponse) {}
+    rpc HasHardware(HasHardwareRequest) returns (HasHardwareResponse) {}
 }
 
 message ServerLiveRequest {}
@@ -20,13 +22,11 @@ message ServerLiveResponse
 {
     bool live = 1;
 }
-
 message ServerReadyRequest {}
 message ServerReadyResponse
 {
     bool ready = 1;
 }
-
 message ModelReadyRequest
 {
     string name = 1;
@@ -36,13 +36,11 @@ message ModelReadyResponse
 {
     bool ready = 1;
 }
-
 message ModelListRequest {}
 message ModelListResponse
 {
     repeated string models = 1;
 }
-
 message ServerMetadataRequest {}
 message ServerMetadataResponse
 {
@@ -50,7 +48,6 @@ message ServerMetadataResponse
     string version = 2;
     repeated string extensions = 3;
 }
-
 message ModelMetadataRequest
 {
     string name = 1;
@@ -70,22 +67,6 @@ message ModelMetadataResponse
     repeated TensorMetadata inputs = 4;
     repeated TensorMetadata outputs = 5;
 }
-
-message ModelLoadRequest
-{
-    string name = 1;
-    map<string, InferParameter> parameters = 2;
-}
-message ModelLoadResponse {}
-
-message ModelUnloadRequest
-{
-    string name = 1;
-}
-message ModelUnloadResponse {}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 message InferParameter
 {
     oneof parameter_choice
@@ -146,4 +127,38 @@ message ModelInferResponse
     map<string, InferParameter> parameters = 4;
     repeated InferOutputTensor outputs = 5;
     repeated bytes raw_output_contents = 6;
+}
+message ModelLoadRequest
+{
+    string name = 1;
+    map<string, InferParameter> parameters = 2;
+}
+message ModelLoadResponse {}
+message ModelUnloadRequest
+{
+    string name = 1;
+}
+message ModelUnloadResponse {}
+message WorkerLoadRequest
+{
+    string name = 1;
+    map<string, InferParameter> parameters = 2;
+}
+message WorkerLoadResponse
+{
+    string endpoint = 1;
+}
+message WorkerUnloadRequest
+{
+    string name = 1;
+}
+message WorkerUnloadResponse {}
+message HasHardwareRequest
+{
+    string name = 1;
+    uint32 num = 2;
+}
+message HasHardwareResponse
+{
+    bool found = 1;
 }

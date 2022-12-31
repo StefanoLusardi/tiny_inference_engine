@@ -1,0 +1,11 @@
+[requires]
+grpc/1.50.1
+cli11/2.3.1
+spdlog/1.11.0
+
+[generators]
+cmake_find_package
+
+[options]
+
+[imports]

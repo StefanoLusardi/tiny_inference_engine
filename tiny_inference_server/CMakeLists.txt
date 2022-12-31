@@ -1,11 +1,6 @@
-add_subdirectory(server_core)
-add_subdirectory(server)
+add_subdirectory(tie_server)
 
-if(TIE_BUILD_SERVER_UNIT_TESTS)
+if(TIE_SERVER_BUILD_UNIT_TESTS)
     enable_testing()
     add_subdirectory(tests)
-endif()
-
-if(TIE_BUILD_SERVER_EXAMPLES)
-    add_subdirectory(examples)
 endif()

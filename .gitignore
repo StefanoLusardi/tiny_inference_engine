@@ -2,7 +2,7 @@
 **/install
 **/onnxruntime
 
-.vscode
+# .vscode
 .cache
 .clangd
 

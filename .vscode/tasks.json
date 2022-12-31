@@ -1,0 +1,106 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "shell",
+            "label": "Conan Install (clang-14)",
+            "detail": "Install conan dependencies",
+            "options": { "cwd": "${workspaceFolder}" },
+            "command": "python3",
+            "args": [
+				"./conan/install.py", 
+                "Debug", 
+                "clang14"
+            ],
+            "group": {
+                "kind": "none",
+                "isDefault": false
+            },
+        },
+
+        {
+            "type": "shell",
+            "label": "Configure (clang++-14)",
+			"detail": "Configure project with CMake",
+            "options": { "cwd": "${workspaceFolder}",  "env": {"lld": "lld-14"} },
+            "problemMatcher": [ "$gcc" ],
+            "command": "cmake",
+            "args": [
+				"-D", "CMAKE_BUILD_TYPE=Debug",
+				"-D", "CMAKE_EXPORT_COMPILE_COMMANDS=TRUE",
+				"-D", "CMAKE_C_COMPILER=clang-14 ",
+				"-D", "CMAKE_CXX_COMPILER=clang++-14",
+                // "-D", "CMAKE_CXX_FLAGS=-fuse-ld=lld",
+				"-S", "${workspaceFolder}",
+				"-B", "${workspaceFolder}/build/Debug",
+				"-G", "Ninja",
+            ],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+        },
+
+		{
+            "type": "shell",
+            "label": "Build (clang++-14)",
+            "detail": "Build project with CMake",
+            "options": { "cwd": "${workspaceFolder}", "env": { "NINJA_STATUS": "[%f/%t %p :: %e] "} },
+            "problemMatcher": [ "$gcc" ],
+            "command": "cmake",
+            "args": [
+				"--build",
+				"${workspaceFolder}/build/Debug",
+				"--config", "Debug", 
+				"--target", "tiny_inference_server"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+
+		{
+            "type": "shell",
+            "label": "Configure (gcc-12)",
+			"detail": "Configure project with CMake",
+            "options": { "cwd": "${workspaceFolder}",  "env": {"lld": "lld-14"} },
+            "problemMatcher": [ "$gcc" ],
+            "command": "cmake",
+            "args": [
+				"-D", "CMAKE_BUILD_TYPE=Debug",
+				"-D", "CMAKE_EXPORT_COMPILE_COMMANDS=TRUE",
+				"-D", "CMAKE_C_COMPILER=gcc-12",
+				"-D", "CMAKE_CXX_COMPILER=g++-12",
+                "-D", "CMAKE_CXX_FLAGS=-fuse-ld=lld",
+				"-S", "${workspaceFolder}",
+				"-B", "${workspaceFolder}/build/Debug",
+				"-G", "Ninja",
+            ],
+            "group": {
+                "kind": "none",
+                "isDefault": false
+            },
+        },
+
+		{
+            "type": "shell",
+            "label": "Build (gcc-12)",
+            "detail": "Build project with CMake",
+            "options": { "cwd": "${workspaceFolder}", "env": { "NINJA_STATUS": "[%f/%t %p :: %e] "} },
+            "problemMatcher": [ "$gcc" ],
+            "command": "cmake",
+            "args": [
+				"--build",
+				"${workspaceFolder}/build/Debug",
+				"--config", "Debug", 
+				"--target", "tiny_inference_server"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+        },
+
+	]
+}

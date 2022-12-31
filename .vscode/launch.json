@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Server (g++ - gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_server/tie_server",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_server/tie_server/tiny_inference_server",
+            "args": [],
+            "setupCommands": [ { "text": "-enable-pretty-printing" } ]
+        },
+        {
+            "name": "Server (clang++ - lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_server/tie_server",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_server/tie_server/tiny_inference_server",
+            "args": [],
+        },
+        {
+            "name": "Client - Model Info (clang++ - lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_model_info",
+            "args": [],
+        },
+        {
+            "name": "Client - Server Info (clang++ - lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_server_info",
+            "args": [],
+        },
+    ]
+}
