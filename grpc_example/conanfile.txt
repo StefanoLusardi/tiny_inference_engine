@@ -1,9 +1,0 @@
-[requires]
-grpc/1.50.1
-
-[generators]
-cmake_find_package
-
-[options]
-
-[imports]

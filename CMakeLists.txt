@@ -54,5 +54,3 @@ endif()
 if(${TIE_CLIENT_BUILD})
     add_subdirectory(tiny_inference_client)
 endif()
-
-add_subdirectory(grpc_example)
