@@ -48,7 +48,8 @@ if(TIE_CLIENT_ENABLE_LOG)
 endif()
 
 target_include_directories(${TARGET_NAME}
-    PUBLIC include
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PUBLIC $<INSTALL_INTERFACE:include>
     PRIVATE ${PROTO_OUT_DIR}
 )
 

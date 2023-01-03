@@ -4,7 +4,7 @@
 #include <atomic>
 
 #include "server_interface.hpp"
-#include <engine_interface.hpp>
+#include <tie_engine/engine_interface.hpp>
 
 namespace tie::server
 {

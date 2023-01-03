@@ -7,12 +7,27 @@ null_backend::null_backend() noexcept {}
 
 null_backend::~null_backend() {}
 
-bool null_backend::load_models(const std::vector<std::string_view>& models)
+auto null_backend::is_model_ready(const std::string& model_name, const std::string& model_version) const -> bool
 {
     return true;
 }
 
-infer_response null_backend::infer(const infer_request& request)
+auto null_backend::model_load(const std::string& model_name, const std::string& model_version) -> bool
+{
+    return true;
+}
+
+auto null_backend::model_unload(const std::string& model_name, const std::string& model_version) -> bool
+{
+    return true;
+}
+
+auto null_backend::model_metadata(const std::string& model_name, const std::string& model_version) -> common::model_metadata
+{
+    return {};
+}
+
+auto null_backend::infer(const infer_request& request) -> infer_response
 {
     return {};
 }

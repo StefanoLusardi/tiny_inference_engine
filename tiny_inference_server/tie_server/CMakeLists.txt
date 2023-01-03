@@ -28,13 +28,43 @@ set(TARGET_SRC
     src/server_shutdown.cpp
     src/main.cpp
 
+    src/rpc/rpc.hpp
+    src/rpc/rpc_io.hpp
+    src/rpc/rpc_pool.hpp
     src/rpc/rpc_pool.cpp
+
+    src/rpc/rpc_server_live.hpp
+    src/rpc/rpc_server_live.cpp
+    src/rpc/rpc_server_metadata.hpp
+    src/rpc/rpc_server_metadata.cpp
+    src/rpc/rpc_server_ready.hpp
+    src/rpc/rpc_server_ready.cpp
+
+    src/rpc/rpc_model_infer.hpp
+    src/rpc/rpc_model_infer.cpp
+    src/rpc/rpc_model_list.hpp
+    src/rpc/rpc_model_list.cpp
+    src/rpc/rpc_model_load.hpp
+    src/rpc/rpc_model_load.cpp
+    src/rpc/rpc_model_metadata.hpp
+    src/rpc/rpc_model_metadata.cpp
+    src/rpc/rpc_model_ready.hpp
+    src/rpc/rpc_model_ready.cpp
+    src/rpc/rpc_model_unload.hpp
+    src/rpc/rpc_model_unload.cpp
+
+    src/rpc/rpc_unary_async.hpp
+    src/rpc/rpc_unary_async.cpp
 )
 
 add_executable(${TARGET_NAME})
+
 target_sources(${TARGET_NAME} PRIVATE ${TARGET_SRC})
+
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
+
 target_include_directories(${TARGET_NAME} PRIVATE ${PROTO_OUT_DIR})
+
 target_link_libraries(${TARGET_NAME}
     PRIVATE CLI11::CLI11
     PRIVATE spdlog::spdlog

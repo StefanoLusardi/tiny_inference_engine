@@ -1,12 +1,12 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <string>
-
 #include <tie_client/infer_request.hpp>
 #include <tie_client/infer_response.hpp>
 #include <tie_client/call_result.hpp>
+
+#include <memory>
+#include <vector>
+#include <string>
 
 namespace tie::client
 {

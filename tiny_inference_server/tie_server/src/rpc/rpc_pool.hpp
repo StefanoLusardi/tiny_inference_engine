@@ -1,33 +1,25 @@
 #pragma once
 
+#include <tie_engine/engine_interface.hpp>
+#include "rpc.hpp"
+
+#include <services.grpc.pb.h>
+#include <spdlog/spdlog.h>
+
 #include <atomic>
 #include <unordered_map>
 #include <memory>
-
-#include <services.grpc.pb.h>
-
-#include <engine_interface.hpp>
-
-#include "rpc.hpp"
-
-#include <spdlog/spdlog.h>
 
 namespace tie::server
 {
 class rpc_pool
 {
 public:
-    ~rpc_pool()
-    {
-        spdlog::trace("delete rpc_pool");
-        release();
-    }
+    ~rpc_pool();
+    static rpc_pool& get();
 
-    static rpc_pool& get()
-    {
-        static rpc_pool instance;
-        return instance;
-    }
+    void remove_rpc(uint64_t rpc_id);
+    void release();
 
     template<class T>
     std::shared_ptr<rpc> create_rpc(
@@ -38,24 +30,11 @@ public:
         // assert std::is_base_of_v<T, rpc>
 
         const auto rpc_id = next_id++;
-
         const auto rpc = std::make_shared<T>(rpc_id, service, cq, engine);
 
         // std::lock_guard<std::mutex> lock{ _rpcs_mutex };
         _rpcs[rpc_id] = rpc;
-
         return rpc;
-    }
-
-    void remove_rpc(uint64_t rpc_id)
-    {
-        // std::lock_guard<std::mutex> lock{ _rpcs_mutex };
-        _rpcs.erase(rpc_id);
-    }
-
-    void release()
-    {
-        // _rpcs.clear();
     }
     
 private:

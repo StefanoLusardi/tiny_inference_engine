@@ -1,13 +1,13 @@
 #include "engine.hpp"
-
-#include <backend_factory.hpp>
-#include <backend_interface.hpp>
+#include <tie_engine/backend_factory.hpp>
+#include <tie_engine/backend_interface.hpp>
 
 #include <spdlog/spdlog.h>
 
 namespace tie::engine
 {
-engine::engine() : _backend { backend_factory::create(backend_factory::type::onnx) }
+engine::engine() 
+: _backend { backend_factory::create(backend_type::onnx) }
 {
     spdlog::debug("creating engine");
 }
@@ -17,29 +17,38 @@ engine::~engine()
     spdlog::debug("deleting engine");
 }
 
-bool engine::is_ready() const
+bool engine::is_engine_ready() const
 {
+    // TODO: check that all models are ready
     return true;
 }
 
-bool engine::is_model_ready(const std::string_view& model_name) const
+auto engine::model_list() const -> std::vector<std::string>
 {
-    // _backend->is_model_ready(model_name);
-    return true;
+    return {};
 }
 
-bool engine::load_model(const std::string_view& model_name) const
+auto engine::is_model_ready(const std::string& model_name, const std::string& model_version) const -> bool
 {
-    return _backend->load_models({model_name});
+    return _backend->is_model_ready(model_name, model_version);
 }
 
-bool engine::unload_model(const std::string_view& model_name) const
+auto engine::model_load(const std::string& model_name, const std::string& model_version) const -> bool
 {
-    // _backend->unload_model(model_name);
-    return true;
+    return _backend->model_load(model_name, model_version);
 }
 
-infer_response engine::infer(const infer_request& request)
+auto engine::model_unload(const std::string& model_name, const std::string& model_version) const -> bool
+{
+    return _backend->model_unload(model_name, model_version);
+}
+
+auto engine::model_metadata(const std::string& model_name, const std::string& model_version) const -> common::model_metadata
+{
+    return _backend->model_metadata(model_name, model_version);
+}
+
+auto engine::infer(const infer_request& request) -> infer_response
 {
     return _backend->infer(request);
 }

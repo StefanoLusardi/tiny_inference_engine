@@ -6,8 +6,12 @@ find_package(spdlog REQUIRED)
 set(TARGET_SRC_PUBLIC
     include/tie_engine/infer_request.hpp
     include/tie_engine/infer_response.hpp
+    include/tie_engine/model_metadata.hpp
+
     include/tie_engine/backend_factory.hpp
     include/tie_engine/backend_interface.hpp
+    include/tie_engine/backend_type.hpp
+
     include/tie_engine/engine_factory.hpp
     include/tie_engine/engine_interface.hpp
 )
@@ -15,8 +19,8 @@ set(TARGET_SRC_PUBLIC
 set(TARGET_SRC_PRIVATE
     src/backend_factory.cpp
     src/engine_factory.cpp
-    src/engine.cpp
     src/engine.hpp
+    src/engine.cpp
     src/null_backend/null_backend.hpp
     src/null_backend/null_backend.cpp
 )
@@ -37,9 +41,9 @@ target_sources(${TARGET_NAME}
 
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
 
-target_include_directories(${TARGET_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tie_engine>
-    $<INSTALL_INTERFACE:include/tie_engine>
+target_include_directories(${TARGET_NAME}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PUBLIC $<INSTALL_INTERFACE:include>
 )
 
 set(CUDA_PACKAGE_SUFFIX "")

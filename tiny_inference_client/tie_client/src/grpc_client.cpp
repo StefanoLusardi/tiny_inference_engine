@@ -3,9 +3,6 @@
 #include <tie_client/infer_response.hpp>
 #include <grpcpp/create_channel.h>
 
-
-
-
 namespace tie::client
 {
 

@@ -1,9 +1,5 @@
 #include "onnx_backend.hpp"
-#include "infer_response.hpp"
-#include "onnxruntime_cxx_api.h"
-
 #include <spdlog/spdlog.h>
-#include <vector>
 
 namespace tie::engine
 {
@@ -17,61 +13,71 @@ onnx_backend::~onnx_backend()
 {
 }
 
-bool onnx_backend::load_models(const std::vector<std::string_view>& models)
+auto onnx_backend::is_model_ready(const std::string& model_name, const std::string& model_version) const -> bool
 {
-    spdlog::info("Loading Models");
-    for(auto&& model : models)
-        spdlog::info(" - {}", model);
+    return true;
+}
+
+auto onnx_backend::model_load(const std::string& model_name, const std::string& model_version) -> bool
+{
+    spdlog::info("Loading Model: {}", model_name);
 
     Ort::SessionOptions session_options;
 
-#if defined(WITH_CUDA)
-    OrtCUDAProviderOptions cuda_options;
-    cuda_options.device_id = 0;
-    session_options.AppendExecutionProvider_CUDA(cuda_options);
-#endif
+    #if defined(WITH_CUDA)
+        OrtCUDAProviderOptions cuda_options;
+        cuda_options.device_id = 0;
+        session_options.AppendExecutionProvider_CUDA(cuda_options);
+    #endif
 
     session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
     session_options.SetIntraOpNumThreads(1);
     session_options.SetInterOpNumThreads(1);
 
-    for (auto model_name : models)
+    if (_model_sessions.find(std::string(model_name)) != _model_sessions.end())
     {
-        if (_model_sessions.find(std::string(model_name)) != _model_sessions.end())
-        {
-            spdlog::warn("Model {} already loaded", model_name);
-            continue;
-        }
-
-        onnx_backend::session_info session_info;
-
-        auto model_name_str = std::basic_string<ORTCHAR_T>(model_name.begin(), model_name.end());
-        auto session = std::make_unique<Ort::Session>(*_env, model_name_str.c_str(), session_options);
-
-        for (auto idx = 0; idx < session->GetInputCount(); ++idx)
-        {
-            char* name = session->GetInputName(idx, *_allocator);
-            const auto shape = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
-            const auto type = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
-            session_info.inputs.emplace_back(name, shape, type, _allocator);
-        }
-
-        for (auto idx = 0; idx < session->GetOutputCount(); ++idx)
-        {
-            char* name = session->GetOutputName(idx, *_allocator);
-            const auto shape = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
-            const auto type = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
-            session_info.outputs.emplace_back(name, shape, type, _allocator);
-        }
-
-        session_info.session = std::move(session);
-        _model_sessions.emplace(model_name, std::move(session_info));
+        spdlog::warn("Model {} already loaded", model_name);
+        continue;
     }
+
+    onnx_backend::session_info session_info;
+
+    auto model_name_str = std::basic_string<ORTCHAR_T>(model_name.begin(), model_name.end());
+    auto session = std::make_unique<Ort::Session>(*_env, model_name_str.c_str(), session_options);
+
+    for (auto idx = 0; idx < session->GetInputCount(); ++idx)
+    {
+        char* name = session->GetInputName(idx, *_allocator);
+        const auto shape = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
+        const auto type = session->GetInputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
+        session_info.inputs.emplace_back(name, shape, type, _allocator);
+    }
+
+    for (auto idx = 0; idx < session->GetOutputCount(); ++idx)
+    {
+        char* name = session->GetOutputName(idx, *_allocator);
+        const auto shape = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetShape();
+        const auto type = session->GetOutputTypeInfo(idx).GetTensorTypeAndShapeInfo().GetElementType();
+        session_info.outputs.emplace_back(name, shape, type, _allocator);
+    }
+
+    session_info.session = std::move(session);
+    _model_sessions.emplace(model_name, std::move(session_info));
 
     return true;
 }
 
-infer_response onnx_backend::infer(const infer_request& request)
+auto onnx_backend::model_unload(const std::string& model_name, const std::string& model_version) -> bool
+{
+    return true;
+}
+
+auto onnx_backend::model_metadata(const std::string& model_name, const std::string& model_version) -> common::model_metadata
+{
+    return {};
+}
+
+auto onnx_backend::infer(const infer_request& request) -> infer_response
 {
     spdlog::info("infer model: {}", request.model_name);
 

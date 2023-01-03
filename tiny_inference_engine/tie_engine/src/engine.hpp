@@ -1,9 +1,9 @@
 #pragma once
 
-#include "engine_interface.hpp"
-
+#include <tie_engine/engine_interface.hpp>
 #include <memory>
-#include <string_view>
+#include <string>
+#include <vector>
 
 namespace tie::engine
 {
@@ -14,11 +14,14 @@ class engine final : public engine_interface
 public:
     explicit engine();
     ~engine() override;
-    bool is_ready() const override;
-    bool load_model(const std::string_view& model_name) const override;
-    bool unload_model(const std::string_view& model_name) const override;
-    bool is_model_ready(const std::string_view& model_name) const override;
-    infer_response infer(const infer_request& request) override;
+    
+    bool is_engine_ready() const override;
+    auto model_list() const -> std::vector<std::string> override;
+    auto is_model_ready(const std::string& model_name, const std::string& model_version) const -> bool override;
+    auto model_load(const std::string& model_name, const std::string& model_version) const -> bool override;
+    auto model_unload(const std::string& model_name, const std::string& model_version) const -> bool override;
+    auto model_metadata(const std::string& model_name, const std::string& model_version) const -> common::model_metadata override;
+    auto infer(const infer_request& infer_request) -> infer_response override;
 
 private:
     std::unique_ptr<backend_interface> _backend;

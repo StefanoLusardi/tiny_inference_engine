@@ -1,28 +1,39 @@
-#pragma once
-
-#include "rpc_unary_async.hpp"
-#include "rpc_io.hpp"
+#include "rpc_model_infer.hpp"
+#include <thread>
 
 namespace tie::server
 {
-
-class rpc_model_infer
-    : public rpc_unary_async
-    , public rpc_io<inference::ModelInferRequest, inference::ModelInferResponse>
+rpc_model_infer::rpc_model_infer(
+    const uint64_t id,
+    const std::shared_ptr<inference::GRPCInferenceService::AsyncService>& service,
+    const std::shared_ptr<grpc::ServerCompletionQueue>& cq,
+    const std::shared_ptr<engine::engine_interface>& engine)
+    : rpc_unary_async("rpc_model_infer", id, service, cq, engine)
+    , rpc_io<io_request_t, io_response_t>()
 {
-public:
-    explicit rpc_model_infer(
-        const uint64_t id,
-        const std::shared_ptr<inference::GRPCInferenceService::AsyncService>& service,
-        const std::shared_ptr<grpc::ServerCompletionQueue>& cq,
-        const std::shared_ptr<engine::engine_interface>& engine);
-    ~rpc_model_infer() override;
+}
 
-    void setup_request() override;
-    void create_rpc() override;
-    void process_request() override;
-    void write_response() override;
-};
+rpc_model_infer::~rpc_model_infer() { }
+
+void rpc_model_infer::setup_request()
+{
+    _service->RequestModelInfer(&context, &request, &response_writer, _cq.get(), _cq.get(), static_cast<void*>(this));
+}
+
+void rpc_model_infer::create_rpc()
+{
+    rpc_pool::get().create_rpc<rpc_model_infer>(_service, _cq, _engine)->execute();
+}
+
+void rpc_model_infer::process_request()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+}
+
+void rpc_model_infer::write_response()
+{
+    response_writer.Finish(response, grpc::Status::OK, static_cast<void*>(this));
+}
 
 }
 

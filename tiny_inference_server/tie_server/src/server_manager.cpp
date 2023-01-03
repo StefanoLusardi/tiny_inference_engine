@@ -3,7 +3,7 @@
 #include "http_server.hpp"
 #include "server_shutdown.hpp"
 
-#include <engine_factory.hpp>
+#include <tie_engine/engine_factory.hpp>
 #include <spdlog/spdlog.h>
 
 namespace tie::server

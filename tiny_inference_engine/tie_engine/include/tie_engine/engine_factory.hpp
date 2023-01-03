@@ -1,12 +1,10 @@
 #pragma once
 
+#include <tie_engine/engine_interface.hpp>
 #include <memory>
-
 
 namespace tie::engine
 {
-class engine_interface;
-
 class engine_factory
 {
 public:
