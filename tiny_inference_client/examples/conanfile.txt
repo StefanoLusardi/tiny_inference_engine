@@ -1,6 +1,23 @@
 [requires]
 grpc/1.50.1
 spdlog/1.11.0
+opencv/4.5.5
+
+# overrides
+zlib/1.2.12
 
 [generators]
 cmake_find_package
+
+[options]
+opencv:with_ade=False
+opencv:with_eigen=False
+opencv:with_ffmpeg=False
+opencv:with_quirc=False
+opencv:with_tiff=False
+opencv:with_v4l=False
+opencv:with_webp=False
+opencv:with_openexr=False
+opencv:with_jpeg2000=False
+opencv:dnn=False
+opencv:with_gtk=True

@@ -12,7 +12,6 @@ server_manager::server_manager(const server_config& config) noexcept
 : _config { config } 
 , _engine { tie::engine::engine_factory::create() }
 {
-    spdlog::set_level(spdlog::level::from_str(_config.log_level));
     spdlog::debug("create server manager");
 }
 

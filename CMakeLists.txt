@@ -1,8 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.16)
 
 project(tiny_inference_engine 
-    LANGUAGES CXX 
-    VERSION 1.0.0
+    LANGUAGES CXX
     DESCRIPTION "tiny inference engine"
     HOMEPAGE_URL "https://github.com/StefanoLusardi/tiny_inference_engine"
 )
@@ -23,7 +22,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
     list(APPEND CXX_FLAGS "-fPIC" "-Wall" "-fno-rtti" "-fno-exceptions" "-Qunused-arguments" "-fcolor-diagnostics")
-    list(APPEND CXX_FLAGS_DEBUG "-Wdocumentation" "-fstandalone-debug")
+    list(APPEND CXX_FLAGS_DEBUG "-Wdocumentation -fstandalone-debug")
     list(APPEND CXX_FLAGS_RELEASE "-O" "-Wno-unused")
 endif()
 

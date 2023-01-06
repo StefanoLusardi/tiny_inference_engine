@@ -37,5 +37,30 @@
             "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_server_info",
             "args": [],
         },
+        {
+            "name": "Client - Model Infer (clang++ - lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_model_infer",
+            "args": [],
+        },
+        {
+            "name": "Client - Image Model Infer (clang++ - lldb)",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_simple_inference",
+            "args": [],
+        },
+        {
+            "name": "Client - Image Model Infer (g++ - gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
+            "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_simple_inference",
+            "args": [],
+            "setupCommands": [ { "text": "-enable-pretty-printing" } ]
+        }
     ]
 }

@@ -30,7 +30,6 @@
 				"-D", "CMAKE_EXPORT_COMPILE_COMMANDS=TRUE",
 				"-D", "CMAKE_C_COMPILER=clang-14 ",
 				"-D", "CMAKE_CXX_COMPILER=clang++-14",
-                // "-D", "CMAKE_CXX_FLAGS=-fuse-ld=lld",
 				"-S", "${workspaceFolder}",
 				"-B", "${workspaceFolder}/build/Debug",
 				"-G", "Ninja",
@@ -43,7 +42,7 @@
 
 		{
             "type": "shell",
-            "label": "Build (clang++-14)",
+            "label": "Build Server (clang++-14)",
             "detail": "Build project with CMake",
             "options": { "cwd": "${workspaceFolder}", "env": { "NINJA_STATUS": "[%f/%t %p :: %e] "} },
             "problemMatcher": [ "$gcc" ],
@@ -102,5 +101,23 @@
             },
         },
 
+		{
+            "type": "shell",
+            "label": "Build Client example (clang++-14)",
+            "detail": "Build project with CMake",
+            "options": { "cwd": "${workspaceFolder}", "env": { "NINJA_STATUS": "[%f/%t %p :: %e] "} },
+            "problemMatcher": [ "$gcc" ],
+            "command": "cmake",
+            "args": [
+				"--build",
+				"${workspaceFolder}/build/Debug",
+				"--config", "Debug", 
+				"--target", "client_example_simple_inference"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+        },
 	]
 }

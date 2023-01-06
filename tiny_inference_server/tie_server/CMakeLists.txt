@@ -12,8 +12,13 @@ set(PROTO_IN_DIR ${CMAKE_SOURCE_DIR}/proto)
 set(PROTO_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto)
 include(grpc_common)
 
+file(STRINGS "VERSION" TIE_SERVER_VERSION)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/src/version.hpp)
+
 set(TARGET_SRC
     ${GRPC_PROTO_FILES}
+    src/version.hpp
+
     src/command_line_parser.cpp
     src/command_line_parser.hpp
     src/server_config.hpp
@@ -26,12 +31,16 @@ set(TARGET_SRC
     src/http_server.cpp
     src/server_shutdown.hpp
     src/server_shutdown.cpp
+    src/logging.hpp
+    src/logging.cpp
     src/main.cpp
 
     src/rpc/rpc.hpp
     src/rpc/rpc_io.hpp
     src/rpc/rpc_pool.hpp
     src/rpc/rpc_pool.cpp
+    src/rpc/rpc_unary_async.hpp
+    src/rpc/rpc_unary_async.cpp
 
     src/rpc/rpc_server_live.hpp
     src/rpc/rpc_server_live.cpp
@@ -52,9 +61,6 @@ set(TARGET_SRC
     src/rpc/rpc_model_ready.cpp
     src/rpc/rpc_model_unload.hpp
     src/rpc/rpc_model_unload.cpp
-
-    src/rpc/rpc_unary_async.hpp
-    src/rpc/rpc_unary_async.cpp
 )
 
 add_executable(${TARGET_NAME})
@@ -70,6 +76,17 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE spdlog::spdlog
     PRIVATE gRPC::grpc++
     PRIVATE tie::tiny_inference_engine
+)
+
+target_precompile_headers(${TARGET_NAME} 
+    PRIVATE <CLI/CLI.hpp>
+    PRIVATE <spdlog/spdlog.h>
+    PRIVATE <spdlog/sinks/basic_file_sink.h>
+    PRIVATE <spdlog/sinks/stdout_color_sinks.h>
+    PRIVATE <services.grpc.pb.h>
+    PRIVATE <grpcpp/grpcpp.h>
+    PRIVATE ${PROTO_INCLUDE}
+    PRIVATE ${GRPC_INCLUDE}
 )
 
 if(TIE_SERVER_ENABLE_SANITIZERS)

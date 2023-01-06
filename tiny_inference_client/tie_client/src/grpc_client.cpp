@@ -1,58 +1,21 @@
 #include "grpc_client.hpp"
-#include <tie_client/call_result.hpp>
-#include <tie_client/infer_response.hpp>
+#include "tie_client/infer_response.hpp"
+// #include "tie_client/server_metadata.hpp"
+// #include "tie_client/model_metadata.hpp"
+// #include <tie_client/call_result.hpp>
+// #include <tie_client/infer_response.hpp>
+// #include <tie_client/server_metadata.hpp>
 #include <grpcpp/create_channel.h>
+#include <numeric>
 
 namespace tie::client
 {
-
-struct AsyncClientCall
-{
-    grpc::ClientContext context;
-    grpc::Status result_code;
-    virtual bool proceed(bool ok) = 0;
-};
-
-template<class ResponseT>
-struct AsyncClientCallback : public AsyncClientCall
-{
-    ResponseT response;
-    void set_response_callback(std::function<void(ResponseT)> response_callback) { _on_response_callback = response_callback; }
-
-protected:
-    std::function<void(ResponseT)> _on_response_callback;
-};
-
-template<class ResponseT>
-struct AsyncClientUnaryCall : public AsyncClientCallback<ResponseT>
-{
-    std::unique_ptr<grpc::ClientAsyncResponseReader<ResponseT>> rpc;
-
-    bool proceed(bool ok) override
-    {
-        if (ok)
-        {
-            if (this->result_code.ok())
-            {
-                // SPDLOG_INFO(this->response.message());
-                if (this->_on_response_callback) this->_on_response_callback(this->response);
-            }
-            else
-            {
-                SPDLOG_INFO("RPC failed: (" << this->result_code.error_code() << ") " << this->result_code.error_message());
-            }
-        }
-
-        return false;
-    }
-};
-
 grpc_client::grpc_client(const std::string& channel_address)
     : _stub{ inference::GRPCInferenceService::NewStub(grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials())) }
 {
     // _async_completion_queue = std::make_unique<grpc::CompletionQueue>();
     // for (auto thread_idx = 0; thread_idx < num_async_threads; ++thread_idx)
-    //     _async_grpc_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq) { grpc_thread_worker(cq); }, _async_completion_queue));
+    //     _async_grpc_threads.emplace_back(std::thread([this](const std::shared_ptr<grpc::CompletionQueue>& cq) { rpc_handler(cq); }, _async_completion_queue));
 }
 
 grpc_client::~grpc_client()
@@ -104,35 +67,32 @@ auto grpc_client::is_server_ready() -> std::tuple<call_result, bool>
     return { call_result::OK, is_server_ready };
 }
 
-auto grpc_client::server_metadata() -> std::tuple<call_result, bool>
+auto grpc_client::server_metadata() -> std::tuple<call_result, tie::client::server_metadata>
 {
     inference::ServerMetadataRequest request;
     inference::ServerMetadataResponse response;
     grpc::ClientContext context;
-
-    // for (auto&& [key, value] : metadata)
-    // {
-    //     context.AddMetadata(key, value);
-    // }
 
     grpc::Status rpc_status = _stub->ServerMetadata(&context, request, &response);
 
     if (!rpc_status.ok())
     {
         SPDLOG_INFO("ERROR - Server Metadata - code: {} - msg: {}", rpc_status.error_code(), rpc_status.error_message());
-        return { call_result::ERROR, false };
+        return { call_result::ERROR, {} };
     }
 
-    const auto server_name = response.name();
-    const auto server_version = response.version();
-    const auto server_extensions = response.extensions();
+    const std::vector<std::string> server_extensions = { response.extensions().begin(), response.extensions().end() };
+
+    tie::client::server_metadata metadata = {response.name(), response.version(), std::move(server_extensions) };
 
     SPDLOG_INFO("Server Metadata:");
-    SPDLOG_INFO("  server_name: {}", server_name);
-    SPDLOG_INFO("  server_version: {}", server_version);
-    // SPDLOG_INFO("  server_extensions: {}", server_extensions);
+    SPDLOG_INFO("  server_name: {}", metadata.server_name);
+    SPDLOG_INFO("  server_version: {}", metadata.server_version);
+    
+    for (auto&& extension : metadata.server_extensions)
+        SPDLOG_INFO("  server_extensions: {}", extension);
 
-    return { call_result::OK, true };
+    return { call_result::OK, metadata };
 }
 
 auto grpc_client::is_model_ready(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool>
@@ -227,34 +187,331 @@ auto grpc_client::model_unload(const std::string& model_name, const std::string&
     return { call_result::OK, true };
 }
 
-auto grpc_client::model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool>
+auto grpc_client::model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, tie::client::model_metadata>
 {
     inference::ModelMetadataRequest request;
     inference::ModelMetadataResponse response;
     grpc::ClientContext context;
 
     request.set_name(model_name);
+    request.set_version(model_version);
+
     grpc::Status rpc_status = _stub->ModelMetadata(&context, request, &response);
 
     if (!rpc_status.ok())
     {
         SPDLOG_INFO("ERROR - Model Metadata - code: {} - msg: {}", rpc_status.error_code(), rpc_status.error_message());
-        return { call_result::ERROR, false };
+        return { call_result::ERROR, {} };
+    }
+
+    tie::client::model_metadata metadata;
+
+    metadata.model_name = response.name();
+    metadata.model_versions = std::vector<std::string>{ response.versions().begin(), response.versions().end() };
+    metadata.platform = response.platform();
+    
+    for(auto&& input : response.inputs())
+    {
+        std::vector<int64_t> shape { input.shape().begin(), input.shape().end() };
+        metadata.inputs.push_back({input.name(), input.datatype(), shape});
+    }
+
+    for(auto&& output : response.outputs())
+    {
+        std::vector<int64_t> shape { output.shape().begin(), output.shape().end() };
+        metadata.outputs.push_back({output.name(), output.datatype(), shape});
     }
 
     SPDLOG_INFO("Model Metadata:");
-    SPDLOG_INFO("  name: {}", model_name);
-    SPDLOG_INFO("  version: {}", model_version);
+    SPDLOG_INFO("  name: {}", metadata.model_name);
+    for(auto&& version : metadata.model_versions)
+        SPDLOG_INFO("  version: {}", version);
+    SPDLOG_INFO("  platform: {}", metadata.platform);
+
+    // for(auto&& input : metadata.inputs)
+    //     SPDLOG_INFO("  input: {}", input);
+
+    // for(auto&& output : metadata.outputs)
+    //     SPDLOG_INFO("  output: {}", output);
     
-    return { call_result::OK, true };
+    return { call_result::OK, metadata };
 }
 
+namespace util
+{
+    template <typename T, typename... Ts>
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    struct is_any : std::disjunction<std::is_same<T, Ts>...> {};
+
+    template <typename T, typename... Ts>
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    inline constexpr bool is_any_v = is_any<T, Ts...>::value;
+}
+
+template<typename T, typename Tensor>
+constexpr auto* getTensorContents(Tensor* tensor)
+{
+    if constexpr (std::is_same_v<T, bool>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().bool_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_bool_contents();
+        }
+    }
+    else if constexpr (util::is_any_v<T, uint8_t, uint16_t, uint32_t>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().uint_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_uint_contents();
+        }
+    }
+    else if constexpr (std::is_same_v<T, uint64_t>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().uint64_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_uint64_contents();
+        }
+    }
+    else if constexpr (util::is_any_v<T, int8_t, int16_t, int32_t>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().int_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_int_contents();
+        }
+    }
+    else if constexpr (std::is_same_v<T, int64_t>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().int64_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_int64_contents();
+        }
+    }
+    else if constexpr (util::is_any_v<T, float>) // fp16, 
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().fp32_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_fp32_contents();
+        }
+    }
+    else if constexpr (std::is_same_v<T, double>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().fp64_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_fp64_contents();
+        }
+    }
+    else if constexpr (std::is_same_v<T, char>)
+    {
+        if constexpr (std::is_const_v<Tensor>)
+        {
+            return tensor->contents().bytes_contents().data();
+        }
+        else
+        {
+            return tensor->mutable_contents()->mutable_bytes_contents();
+        }
+    }
+    else
+    {
+        static_assert(!sizeof(T), "Invalid type to AddDataToTensor");
+    }
+}
+
+struct AddDataToTensor
+{
+    template<typename T, typename Tensor>
+    void operator()(const void* source_data, size_t size, Tensor* tensor) const
+    {
+        const auto* data = static_cast<const T*>(source_data);
+        auto* contents = getTensorContents<T>(tensor);
+
+        if constexpr (std::is_same_v<T, char>)
+        {
+            contents->Add(data);
+        }
+        // else if constexpr (std::is_same_v<T, fp16>)
+        // {
+        //     for (auto i = 0U; i < size; ++i)
+        //     {
+        //         contents->Add(static_cast<float>(data[i]));
+        //     }
+        // }
+        else
+        {
+            for (auto i = 0U; i < size; ++i)
+            {
+                contents->Add(data[i]);
+            }
+        }
+    }
+};
+
+template<typename F, typename... Args>
+auto switchOverTypes(F f, tie::data_type type, [[maybe_unused]] const Args&... args)
+{
+    switch (type.value)
+    {
+        case data_type::Bool:
+        {
+            return f.template operator()<bool>(args...);
+        }
+        case data_type::Uint8:
+        {
+            return f.template operator()<uint8_t>(args...);
+        }
+        case data_type::Uint16:
+        {
+            return f.template operator()<uint16_t>(args...);
+        }
+        case data_type::Uint32:
+        {
+            return f.template operator()<uint32_t>(args...);
+        }
+        case data_type::Uint64:
+        {
+            return f.template operator()<uint64_t>(args...);
+        }
+        case data_type::Int8:
+        {
+            return f.template operator()<int8_t>(args...);
+        }
+        case data_type::Int16:
+        {
+            return f.template operator()<int16_t>(args...);
+        }
+        case data_type::Int32:
+        {
+            return f.template operator()<int32_t>(args...);
+        }
+        case data_type::Int64:
+        {
+            return f.template operator()<int64_t>(args...);
+        }
+        // case data_type::Fp16: {
+        //   return f.template operator()<fp16>(args...);
+        // }
+        case data_type::Fp32:
+        {
+            return f.template operator()<float>(args...);
+        }
+        case data_type::Fp64:
+        {
+            return f.template operator()<double>(args...);
+        }
+        case data_type::String:
+        {
+            return f.template operator()<char>(args...);
+        }
+        default: throw;
+    }
+}
+
+struct SetOutputData
+{
+    template<typename T, typename Tensor>
+    void operator()(InferenceResponseOutput* output, size_t size, Tensor* tensor) const
+    {
+        std::vector<std::byte> data;
+        const auto bytes_to_copy = size * sizeof(T);
+        data.resize(bytes_to_copy);
+        const auto* contents = getTensorContents<T>(tensor);
+        if constexpr (std::is_same_v<T, char>)
+        {
+            std::memcpy(data.data(), contents, size * sizeof(std::byte));
+            output->data = data.data();
+            // output->data = std::move(data);
+        }
+        else
+        {
+            if constexpr (util::is_any_v<T, int8_t, uint8_t, int16_t, uint16_t>) // fp16
+            {
+                for (auto i = 0U; i < size; ++i)
+                {
+                    std::memcpy(&(data[i * sizeof(T)]), &(contents[i]), sizeof(T));
+                }
+            }
+            else
+            {
+                std::memcpy(data.data(), contents, bytes_to_copy);
+            }
+            output->data = data.data();
+            // output->data = std::move(data);
+        }
+
+        // logTraceBuffer(observer.logger, output->getData(), sizeof(T));
+    }
+};
 
 auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<call_result, tie::infer_response>
 {
+
     inference::ModelInferRequest request;
     inference::ModelInferResponse response;
     grpc::ClientContext context;
+
+    std::map<std::string, std::string> metadata {};
+    for (auto&& [key, value] : metadata)
+    {
+        context.AddMetadata(key, value);
+    }
+    
+    const auto deadline_timeout = std::chrono::milliseconds(200);
+    const auto deadline = std::chrono::system_clock::now() + deadline_timeout;
+    // context.set_deadline(deadline);
+    context.set_compression_algorithm(grpc_compression_algorithm::GRPC_COMPRESS_NONE);
+
+    request.set_model_name(infer_request.model_name);
+    request.set_model_version(infer_request.model_version);
+    request.set_id(infer_request.id);
+
+    const auto& inputs = infer_request.inputs;
+    for (const auto& input : inputs)
+    {
+        auto* tensor = request.add_inputs();
+        tensor->set_name(input.name);
+        const auto& shape = input.shape;
+        auto size = 1U;
+        for (const auto& index : shape)
+        {
+            tensor->add_shape(index);
+            size *= index;
+        }
+        auto data_type = input.datatype;
+        tensor->set_datatype(data_type.str());
+
+        // mapParametersToProto(input.parameters->data, tensor->mutable_parameters());
+
+        auto input_size = std::accumulate(input.shape.begin(), input.shape.end(), 1, std::multiplies<>());
+        switchOverTypes(AddDataToTensor(), input.datatype, input.data, input_size, tensor);
+    }
 
     grpc::Status rpc_status = _stub->ModelInfer(&context, request, &response);
 
@@ -263,8 +520,34 @@ auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<c
         SPDLOG_INFO("ERROR - Model Infer - code: {} - msg: {}", rpc_status.error_code(), rpc_status.error_message());
         return { call_result::ERROR, {} };
     }
+
+    tie::infer_response infer_response;
+    infer_response.model_name = response.model_name();
+    infer_response.model_version = response.model_version();
+    infer_response.id = response.id();
+
+    for (const auto& tensor : response.outputs())
+    {
+        InferenceResponseOutput response_output;
+
+        response_output.name = tensor.name();
+        response_output.datatype = tie::data_type(tensor.datatype().c_str());
         
-    return { call_result::OK, {} };
+        std::vector<uint64_t> shape;
+        shape.reserve(tensor.shape_size());
+        auto size = 1U;
+        for (const auto& index : tensor.shape())
+        {
+            shape.push_back(static_cast<size_t>(index));
+            size *= index;
+        }
+
+        response_output.shape = shape;
+        switchOverTypes(SetOutputData(), response_output.datatype, &response_output, size, &tensor);
+        infer_response.addOutput(response_output);
+    }
+
+    return { call_result::OK, infer_response };
 }
 
 /*
@@ -301,20 +584,20 @@ auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<c
 
 void grpc_client::rpc_handler(const std::shared_ptr<grpc::CompletionQueue>& cq)
 {
-    void* tag;
-    bool ok = false;
+    // void* tag;
+    // bool ok = false;
     
-    while (cq->Next(&tag, &ok))
-    {
-        if (!ok)
-        {
-            SPDLOG_WARN("Client stream closed");
-            break;
-        }
+    // while (cq->Next(&tag, &ok))
+    // {
+    //     if (!ok)
+    //     {
+    //         SPDLOG_WARN("Client stream closed");
+    //         break;
+    //     }
 
-        auto rpc = static_cast<AsyncClientCall*>(tag);
-        rpc->proceed(ok);
-    }
+    //     auto rpc = static_cast<AsyncClientCall*>(tag);
+    //     rpc->proceed(ok);
+    // }
 }
 
 }

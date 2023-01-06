@@ -17,9 +17,11 @@ set(TARGET_SRC_PUBLIC
     include/tie_client/call_result.hpp
     include/tie_client/infer_request.hpp
     include/tie_client/infer_response.hpp
+    include/tie_client/data_type.hpp
 )
 
 set(TARGET_SRC_PRIVATE
+    src/data_type.cpp
     src/grpc_client.hpp
     src/grpc_client.cpp
     src/client_factory.cpp
@@ -56,6 +58,13 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME} 
     PRIVATE gRPC::grpc++
     PRIVATE spdlog::spdlog
+)
+
+target_precompile_headers(${TARGET_NAME}
+    PRIVATE <services.grpc.pb.h>
+    PRIVATE <grpcpp/grpcpp.h>
+    PRIVATE ${PROTO_INCLUDE}
+    PRIVATE ${GRPC_INCLUDE}
 )
 
 if(TIE_CLIENT_ENABLE_SANITIZERS)

@@ -7,7 +7,7 @@
 namespace tie::engine
 {
 engine::engine() 
-: _backend { backend_factory::create(backend_type::onnx) }
+: _backend { backend_factory::create(backend_type::null) }
 {
     spdlog::debug("creating engine");
 }
@@ -35,6 +35,7 @@ auto engine::is_model_ready(const std::string& model_name, const std::string& mo
 
 auto engine::model_load(const std::string& model_name, const std::string& model_version) const -> bool
 {
+    spdlog::info("engine::model_load");
     return _backend->model_load(model_name, model_version);
 }
 

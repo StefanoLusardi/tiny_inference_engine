@@ -61,7 +61,7 @@ bool grpc_server::start(const server_config& config)
         _rpc_inference_queues.emplace_back(queue);
     }
 
-    _rpc_common_queue = builder.AddCompletionQueue(/*false*/);
+    _rpc_common_queue = builder.AddCompletionQueue(false);
     _server = builder.BuildAndStart();
     _is_running = _server != nullptr;
 

@@ -14,6 +14,7 @@ auto null_backend::is_model_ready(const std::string& model_name, const std::stri
 
 auto null_backend::model_load(const std::string& model_name, const std::string& model_version) -> bool
 {
+    spdlog::info("null_backend::model_load");
     return true;
 }
 

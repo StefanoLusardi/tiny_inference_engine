@@ -26,7 +26,9 @@ void rpc_model_load::create_rpc()
 
 void rpc_model_load::process_request()
 {
+    std::cout << "rpc_model_load::process_request - begin" << std::endl;
     const bool is_model_loaded = _engine->model_load(request.name(), "");
+    std::cout << "rpc_model_load::process_request - end" << std::endl;
 }
 
 void rpc_model_load::write_response()

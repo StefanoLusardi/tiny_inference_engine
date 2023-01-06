@@ -27,6 +27,17 @@ void rpc_model_infer::create_rpc()
 
 void rpc_model_infer::process_request()
 {
+    spdlog::trace("model_name: {}", request.model_name());
+    spdlog::trace("model_version: {}", request.model_version());
+    spdlog::trace("id: {}", request.id());
+    
+    for (auto&& input : request.inputs())
+    {
+        spdlog::trace("id: {}", input.name());
+        spdlog::trace("id: {}", input.datatype());
+        // spdlog::trace("id: {}", input.());
+    }
+
     std::this_thread::sleep_for(std::chrono::seconds(3));
 }
 

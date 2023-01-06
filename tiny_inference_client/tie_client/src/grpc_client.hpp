@@ -14,8 +14,6 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include <functional>
-
 
 namespace tie::client
 {
@@ -27,13 +25,13 @@ public:
 
     auto is_server_live() -> std::tuple<call_result, bool> override;
     auto is_server_ready() -> std::tuple<call_result, bool> override;
-    auto server_metadata() -> std::tuple<call_result, bool> override;
+    auto server_metadata() -> std::tuple<call_result, tie::client::server_metadata> override;
     
     auto model_list() -> std::tuple<call_result, std::vector<std::string>> override;
     auto is_model_ready(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_load(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_unload(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
-    auto model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
+    auto model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, tie::client::model_metadata> override;
 
     auto infer(const tie::infer_request& infer_request) -> std::tuple<call_result, tie::infer_response> override;
 

@@ -1,4 +1,5 @@
 #include "rpc_server_metadata.hpp"
+#include "../version.hpp"
 
 namespace tie::server
 {
@@ -26,8 +27,8 @@ void rpc_server_metadata::create_rpc()
 
 void rpc_server_metadata::process_request()
 {
-    response.set_name("Tiny Inference Server");
-    response.set_version("0.1.0");
+    response.set_name(TIE_SERVER_NAME);
+    response.set_version(TIE_SERVER_VERSION);
 }
 
 void rpc_server_metadata::write_response()

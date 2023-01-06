@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 namespace tie::server
@@ -7,11 +8,14 @@ namespace tie::server
 struct server_config
 {
     bool restart_server;
-    std::string models_repo;
+    std::filesystem::path models_repo;
 
     // Logger
-    std::string log_level;
-    std::string log_file;
+    bool enable_console_logger;
+    std::string console_logger_level;
+    bool enable_file_logger;
+    std::string file_logger_level;
+    std::filesystem::path log_file;
     
     // HTTP Server
     bool is_http_server_enabled;

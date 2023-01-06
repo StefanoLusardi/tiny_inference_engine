@@ -1,11 +1,10 @@
 #pragma once
 
+#include <tie_client/client_interface.hpp>
 #include <memory>
 
 namespace tie::client
 {
-class client_interface;
-
 class client_factory
 {
 public:
