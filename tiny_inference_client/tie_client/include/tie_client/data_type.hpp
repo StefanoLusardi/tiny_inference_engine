@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-namespace tie
+namespace tie::client
 {
 class data_type
 {

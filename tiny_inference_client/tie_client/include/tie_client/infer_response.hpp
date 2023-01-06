@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-namespace tie
+namespace tie::client
 {
 using InferenceResponseOutput = infer_tensor;
 

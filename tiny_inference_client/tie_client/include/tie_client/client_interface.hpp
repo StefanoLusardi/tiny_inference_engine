@@ -27,7 +27,7 @@ public:
     virtual auto model_unload(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> = 0;
     virtual auto model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, model_metadata> = 0;
 
-    virtual auto infer(const tie::infer_request& infer_request)  -> std::tuple<call_result, tie::infer_response> = 0;
+    virtual auto infer(const infer_request& infer_request)  -> std::tuple<call_result, infer_response> = 0;
 };
 
 }

@@ -24,13 +24,13 @@ int main(int argc, char** argv)
     cv::imshow("Resized image", image);
     // cv::waitKey(0);
 
-    auto request = tie::infer_request();
+    auto request = tie::client::infer_request();
     request.model_name = "models/squeezenet1.1-7.onnx";
     request.model_version = "";
     client->model_load(request.model_name, request.model_version);
 
     std::vector<uint64_t> shape {static_cast<uint64_t>(image.cols), static_cast<uint64_t>(image.rows), static_cast<uint64_t>(image.channels())};
-    request.addInputTensor(image.data, shape, tie::data_type::Fp32, "squeezenet0_flatten0_reshape0");
+    request.addInputTensor(image.data, shape, tie::client::data_type::Fp32, "squeezenet0_flatten0_reshape0");
     auto [call_result, response] = client->infer(request);
 
     if (!call_result.ok())

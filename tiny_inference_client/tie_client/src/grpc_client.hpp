@@ -33,7 +33,7 @@ public:
     auto model_unload(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, tie::client::model_metadata> override;
 
-    auto infer(const tie::infer_request& infer_request) -> std::tuple<call_result, tie::infer_response> override;
+    auto infer(const infer_request& infer_request) -> std::tuple<call_result, infer_response> override;
 
 private:
     void rpc_handler(const std::shared_ptr<grpc::CompletionQueue>& cq);

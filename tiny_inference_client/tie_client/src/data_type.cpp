@@ -1,6 +1,6 @@
 #include <tie_client/data_type.hpp>
 
-namespace tie
+namespace tie::client
 {
 [[nodiscard]] 
 data_type::Value data_type::from_string(const char* str_value)

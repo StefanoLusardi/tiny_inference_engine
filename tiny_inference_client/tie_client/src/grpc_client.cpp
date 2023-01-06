@@ -212,13 +212,13 @@ auto grpc_client::model_metadata(const std::string& model_name, const std::strin
     
     for(auto&& input : response.inputs())
     {
-        std::vector<int64_t> shape { input.shape().begin(), input.shape().end() };
+        std::vector<uint64_t> shape { input.shape().begin(), input.shape().end() };
         metadata.inputs.push_back({input.name(), input.datatype(), shape});
     }
 
     for(auto&& output : response.outputs())
     {
-        std::vector<int64_t> shape { output.shape().begin(), output.shape().end() };
+        std::vector<uint64_t> shape { output.shape().begin(), output.shape().end() };
         metadata.outputs.push_back({output.name(), output.datatype(), shape});
     }
 
@@ -375,7 +375,7 @@ struct AddDataToTensor
 };
 
 template<typename F, typename... Args>
-auto switchOverTypes(F f, tie::data_type type, [[maybe_unused]] const Args&... args)
+auto switchOverTypes(F f, tie::client::data_type type, [[maybe_unused]] const Args&... args)
 {
     switch (type.value)
     {
@@ -470,7 +470,7 @@ struct SetOutputData
     }
 };
 
-auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<call_result, tie::infer_response>
+auto grpc_client::infer(const infer_request& infer_request) -> std::tuple<call_result, infer_response>
 {
 
     inference::ModelInferRequest request;
@@ -521,7 +521,7 @@ auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<c
         return { call_result::ERROR, {} };
     }
 
-    tie::infer_response infer_response;
+    tie::client::infer_response infer_response;
     infer_response.model_name = response.model_name();
     infer_response.model_version = response.model_version();
     infer_response.id = response.id();
@@ -531,7 +531,7 @@ auto grpc_client::infer(const tie::infer_request& infer_request) -> std::tuple<c
         InferenceResponseOutput response_output;
 
         response_output.name = tensor.name();
-        response_output.datatype = tie::data_type(tensor.datatype().c_str());
+        response_output.datatype = tie::client::data_type(tensor.datatype().c_str());
         
         std::vector<uint64_t> shape;
         shape.reserve(tensor.shape_size());

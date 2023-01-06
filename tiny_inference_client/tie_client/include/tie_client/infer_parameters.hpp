@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 
-namespace tie
+namespace tie::client
 {
 using Parameter = std::variant<bool, int32_t, double, std::string>;
 

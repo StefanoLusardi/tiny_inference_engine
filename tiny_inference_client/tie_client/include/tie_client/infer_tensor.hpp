@@ -4,12 +4,10 @@
 #include <tie_client/data_type.hpp>
 
 #include <vector>
-#include <variant>
-#include <map>
 #include <memory>
 #include <string>
 
-namespace tie
+namespace tie::client
 {
 struct infer_tensor
 {

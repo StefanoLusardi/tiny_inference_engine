@@ -11,7 +11,7 @@ struct model_metadata
     {
         std::string name;
         std::string datatype;
-        std::vector<int64_t> shape;
+        std::vector<uint64_t> shape;
     };
 
     std::string model_name;
