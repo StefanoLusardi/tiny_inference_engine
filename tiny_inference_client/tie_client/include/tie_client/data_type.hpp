@@ -26,9 +26,11 @@ public:
         Unknown,
     };
 
-    data_type() = default;
+    data_type() : value{Value::Unknown} {}
     data_type(data_type::Value value) : value(value) {}
     data_type(const char* str_value) : value(from_string(str_value)) {}
+
+    constexpr operator Value() const { return value; }
 
     [[nodiscard]] data_type::Value from_string(const char* str_value);
     [[nodiscard]] const char* str() const;

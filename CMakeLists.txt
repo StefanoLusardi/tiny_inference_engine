@@ -53,3 +53,6 @@ endif()
 if(${TIE_CLIENT_BUILD})
     add_subdirectory(tiny_inference_client)
 endif()
+
+add_executable(scratchpad scratchpad.cpp)
+target_compile_features(scratchpad PUBLIC cxx_std_17)

@@ -61,6 +61,23 @@
             "program": "${workspaceFolder}/build/Debug/tiny_inference_client/examples/client_example_simple_inference",
             "args": [],
             "setupCommands": [ { "text": "-enable-pretty-printing" } ]
-        }
+        },
+        {
+            "name": "Scratchpad lldb",
+            "type": "lldb",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug",
+            "program": "${workspaceFolder}/build/Debug/scratchpad",
+            "args": [],
+        },
+        {
+            "name": "Scratchpad gdb",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/build/Debug",
+            "program": "${workspaceFolder}/build/Debug/scratchpad",
+            "args": [],
+            "setupCommands": [ { "text": "-enable-pretty-printing" } ]
+        },
     ]
 }

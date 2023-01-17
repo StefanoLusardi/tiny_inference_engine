@@ -240,11 +240,9 @@ auto grpc_client::model_metadata(const std::string& model_name, const std::strin
 namespace util
 {
     template <typename T, typename... Ts>
-    // NOLINTNEXTLINE(readability-identifier-naming)
     struct is_any : std::disjunction<std::is_same<T, Ts>...> {};
 
     template <typename T, typename... Ts>
-    // NOLINTNEXTLINE(readability-identifier-naming)
     inline constexpr bool is_any_v = is_any<T, Ts...>::value;
 }
 
@@ -262,7 +260,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_bool_contents();
         }
     }
-    else if constexpr (util::is_any_v<T, uint8_t, uint16_t, uint32_t>)
+    
+    if constexpr (util::is_any_v<T, uint8_t, uint16_t, uint32_t>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -273,7 +272,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_uint_contents();
         }
     }
-    else if constexpr (std::is_same_v<T, uint64_t>)
+    
+    if constexpr (std::is_same_v<T, uint64_t>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -284,7 +284,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_uint64_contents();
         }
     }
-    else if constexpr (util::is_any_v<T, int8_t, int16_t, int32_t>)
+    
+    if constexpr (util::is_any_v<T, int8_t, int16_t, int32_t>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -295,7 +296,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_int_contents();
         }
     }
-    else if constexpr (std::is_same_v<T, int64_t>)
+
+    if constexpr (std::is_same_v<T, int64_t>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -306,7 +308,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_int64_contents();
         }
     }
-    else if constexpr (util::is_any_v<T, float>) // fp16, 
+    
+    if constexpr (util::is_any_v<T, float>) // fp16, 
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -317,7 +320,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_fp32_contents();
         }
     }
-    else if constexpr (std::is_same_v<T, double>)
+    
+    if constexpr (std::is_same_v<T, double>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -328,7 +332,8 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_fp64_contents();
         }
     }
-    else if constexpr (std::is_same_v<T, char>)
+    
+    if constexpr (std::is_same_v<T, char>)
     {
         if constexpr (std::is_const_v<Tensor>)
         {
@@ -339,16 +344,14 @@ constexpr auto* getTensorContents(Tensor* tensor)
             return tensor->mutable_contents()->mutable_bytes_contents();
         }
     }
-    else
-    {
-        static_assert(!sizeof(T), "Invalid type to AddDataToTensor");
-    }
+
+    // static_assert(!sizeof(T), "Invalid type to AddDataToTensor");
 }
 
-struct AddDataToTensor
+template<typename T, typename Tensor>
+struct SetInputData
 {
-    template<typename T, typename Tensor>
-    void operator()(const void* source_data, size_t size, Tensor* tensor) const
+    constexpr void operator()(Tensor* tensor, const void* source_data, size_t size)
     {
         const auto* data = static_cast<const T*>(source_data);
         auto* contents = getTensorContents<T>(tensor);
@@ -374,10 +377,45 @@ struct AddDataToTensor
     }
 };
 
+template<typename T, typename Tensor>
+struct SetOutputData
+{
+    /*constexpr*/ void operator()(Tensor* tensor, InferenceResponseOutput* output, size_t size)
+    {
+        std::vector<std::byte> data;
+        const auto bytes_to_copy = size * sizeof(T);
+        data.resize(bytes_to_copy);
+        const auto* contents = getTensorContents<T>(tensor);
+        if constexpr (std::is_same_v<T, char>)
+        {
+            std::memcpy(data.data(), contents, size * sizeof(std::byte));
+            output->data = data.data();
+            // output->data = std::move(data);
+        }
+        else
+        {
+            if constexpr (util::is_any_v<T, int8_t, uint8_t, int16_t, uint16_t>) // fp16
+            {
+                for (auto i = 0U; i < size; ++i)
+                {
+                    std::memcpy(&(data[i * sizeof(T)]), &(contents[i]), sizeof(T));
+                }
+            }
+            else
+            {
+                std::memcpy(data.data(), contents, bytes_to_copy);
+            }
+            output->data = data.data();
+            // output->data = std::move(data);
+        }
+    }
+};
+
+/*
 template<typename F, typename... Args>
 auto switchOverTypes(F f, tie::client::data_type type, [[maybe_unused]] const Args&... args)
 {
-    switch (type.value)
+    switch (type)
     {
         case data_type::Bool:
         {
@@ -433,46 +471,92 @@ auto switchOverTypes(F f, tie::client::data_type type, [[maybe_unused]] const Ar
         default: throw;
     }
 }
+*/
 
-struct SetOutputData
+template<typename F, typename TensorT, typename... Args>
+auto switchOverTypes(F f, tie::client::data_type type, TensorT tensor, [[maybe_unused]] const Args&... args)
 {
-    template<typename T, typename Tensor>
-    void operator()(InferenceResponseOutput* output, size_t size, Tensor* tensor) const
+    switch (type)
     {
-        std::vector<std::byte> data;
-        const auto bytes_to_copy = size * sizeof(T);
-        data.resize(bytes_to_copy);
-        const auto* contents = getTensorContents<T>(tensor);
-        if constexpr (std::is_same_v<T, char>)
+        case data_type::Bool:
         {
-            std::memcpy(data.data(), contents, size * sizeof(std::byte));
-            output->data = data.data();
-            // output->data = std::move(data);
+            // return std::invoke(f<bool, decltype(tensor)>, args...);
         }
-        else
+        case data_type::Uint8:
         {
-            if constexpr (util::is_any_v<T, int8_t, uint8_t, int16_t, uint16_t>) // fp16
-            {
-                for (auto i = 0U; i < size; ++i)
-                {
-                    std::memcpy(&(data[i * sizeof(T)]), &(contents[i]), sizeof(T));
-                }
-            }
-            else
-            {
-                std::memcpy(data.data(), contents, bytes_to_copy);
-            }
-            output->data = data.data();
-            // output->data = std::move(data);
+            return f.template operator()<uint8_t>(args...);
         }
-
-        // logTraceBuffer(observer.logger, output->getData(), sizeof(T));
+        case data_type::Uint16:
+        {
+            return f.template operator()<uint16_t>(args...);
+        }
+        case data_type::Uint32:
+        {
+            return f.template operator()<uint32_t>(args...);
+        }
+        case data_type::Uint64:
+        {
+            return f.template operator()<uint64_t>(args...);
+        }
+        case data_type::Int8:
+        {
+            return f.template operator()<int8_t>(args...);
+        }
+        case data_type::Int16:
+        {
+            return f.template operator()<int16_t>(args...);
+        }
+        case data_type::Int32:
+        {
+            return f.template operator()<int32_t>(args...);
+        }
+        case data_type::Int64:
+        {
+            return f.template operator()<int64_t>(args...);
+        }
+        // case data_type::Fp16: {
+        //   return f.template operator()<fp16>(args...);
+        // }
+        case data_type::Fp32:
+        {
+            return f.template operator()<float>(args...);
+        }
+        case data_type::Fp64:
+        {
+            return f.template operator()<double>(args...);
+        }
+        case data_type::String:
+        {
+            return f.template operator()<char>(args...);
+        }
+        default: throw;
     }
-};
+}
+
+template<template<typename, typename> class func_t, typename TensorT, typename... Args>
+void callable_wrapper(tie::client::data_type type, TensorT* tensor, Args... args)
+{
+    switch(type)
+    {
+        case data_type::Bool:   return std::invoke(func_t<bool, TensorT>(), tensor, args...);
+        case data_type::Uint8:  return std::invoke(func_t<uint8_t, TensorT>(), tensor, args...);
+        case data_type::Uint16: return std::invoke(func_t<uint16_t, TensorT>(), tensor, args...);
+        case data_type::Uint32: return std::invoke(func_t<uint32_t, TensorT>(), tensor, args...);
+        case data_type::Uint64: return std::invoke(func_t<uint64_t, TensorT>(), tensor, args...);
+        case data_type::Int8:   return std::invoke(func_t<int8_t, TensorT>(), tensor, args...);
+        case data_type::Int16:  return std::invoke(func_t<int16_t, TensorT>(), tensor, args...);
+        case data_type::Int32:  return std::invoke(func_t<int32_t, TensorT>(), tensor, args...);
+        case data_type::Int64:  return std::invoke(func_t<int64_t, TensorT>(), tensor, args...);
+        case data_type::Fp16:   return; // std::invoke(func_t<uint64_t, TensorT>(), tensor, args...);
+        case data_type::Fp32:   return std::invoke(func_t<float, TensorT>(), tensor, args...);
+        case data_type::Fp64:   return std::invoke(func_t<double, TensorT>(), tensor, args...);
+        case data_type::String: return std::invoke(func_t<char, TensorT>(), tensor, args...);
+        case data_type::Unknown: static_assert("Unknown DataType"); return;
+    }
+}
 
 auto grpc_client::infer(const infer_request& infer_request) -> std::tuple<call_result, infer_response>
 {
-
     inference::ModelInferRequest request;
     inference::ModelInferResponse response;
     grpc::ClientContext context;
@@ -492,25 +576,20 @@ auto grpc_client::infer(const infer_request& infer_request) -> std::tuple<call_r
     request.set_model_version(infer_request.model_version);
     request.set_id(infer_request.id);
 
-    const auto& inputs = infer_request.inputs;
-    for (const auto& input : inputs)
+    for (auto&& input : infer_request.inputs)
     {
-        auto* tensor = request.add_inputs();
+        auto tensor = request.add_inputs();
         tensor->set_name(input.name);
-        const auto& shape = input.shape;
-        auto size = 1U;
-        for (const auto& index : shape)
+        tensor->set_datatype(input.datatype.str());
+
+        for (auto&& shape : input.shape)
         {
-            tensor->add_shape(index);
-            size *= index;
+            tensor->add_shape(shape);
         }
-        auto data_type = input.datatype;
-        tensor->set_datatype(data_type.str());
 
         // mapParametersToProto(input.parameters->data, tensor->mutable_parameters());
-
-        auto input_size = std::accumulate(input.shape.begin(), input.shape.end(), 1, std::multiplies<>());
-        switchOverTypes(AddDataToTensor(), input.datatype, input.data, input_size, tensor);
+        const size_t input_size = std::accumulate(input.shape.begin(), input.shape.end(), 1, std::multiplies<>());
+        callable_wrapper<SetInputData>(input.datatype, tensor, input.data, input_size);
     }
 
     grpc::Status rpc_status = _stub->ModelInfer(&context, request, &response);
@@ -533,17 +612,18 @@ auto grpc_client::infer(const infer_request& infer_request) -> std::tuple<call_r
         response_output.name = tensor.name();
         response_output.datatype = tie::client::data_type(tensor.datatype().c_str());
         
-        std::vector<uint64_t> shape;
-        shape.reserve(tensor.shape_size());
-        auto size = 1U;
-        for (const auto& index : tensor.shape())
+        std::vector<uint64_t> tensor_shape;
+        tensor_shape.reserve(tensor.shape_size());
+        
+        auto output_size = 1U;
+        for (const auto& shape : tensor.shape())
         {
-            shape.push_back(static_cast<size_t>(index));
-            size *= index;
+            tensor_shape.push_back(static_cast<size_t>(shape));
+            output_size *= shape;
         }
 
-        response_output.shape = shape;
-        switchOverTypes(SetOutputData(), response_output.datatype, &response_output, size, &tensor);
+        response_output.shape = tensor_shape;
+        callable_wrapper<SetOutputData>(response_output.datatype, &tensor, &response_output,  output_size);
         infer_response.addOutput(response_output);
     }
 
