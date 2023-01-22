@@ -6,12 +6,12 @@
 
 namespace tie::client
 {
-using Parameter = std::variant<bool, int32_t, double, std::string>;
+using parameter = std::variant<bool, int32_t, double, std::string>;
 
-struct RequestParameters
+struct infer_parameters
 {
 private:
-    std::map<std::string, Parameter> parameters;
+    std::map<std::string, parameter> parameters;
 };
 
 }

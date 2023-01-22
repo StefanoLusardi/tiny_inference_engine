@@ -16,13 +16,13 @@ int main(int argc, char** argv)
     std::string image_file_path{ "images/dog.jpg" };
     cv::Mat image = cv::imread(image_file_path, cv::ImreadModes::IMREAD_COLOR);
     cv::imshow("Input image", image);
-    // cv::waitKey(0);
+    cv::waitKey(0);
     
     cv::resize(image, image, cv::Size(224, 224), cv::InterpolationFlags::INTER_CUBIC);
     cv::cvtColor(image, image, cv::ColorConversionCodes::COLOR_BGR2RGB);
     image.convertTo(image, CV_32F, 1.0 / 255);
     cv::imshow("Resized image", image);
-    // cv::waitKey(0);
+    cv::waitKey(0);
 
     auto request = tie::client::infer_request();
     request.model_name = "models/squeezenet1.1-7.onnx";
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     client->model_load(request.model_name, request.model_version);
 
     std::vector<uint64_t> shape {static_cast<uint64_t>(image.cols), static_cast<uint64_t>(image.rows), static_cast<uint64_t>(image.channels())};
-    request.addInputTensor(image.data, shape, tie::client::data_type::Fp32, "squeezenet0_flatten0_reshape0");
+    request.add_input_tensor(image.data, shape, tie::client::data_type::Fp32, "squeezenet0_flatten0_reshape0");
     auto [call_result, response] = client->infer(request);
 
     if (!call_result.ok())
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    auto result = response.outputs;
+    // auto result = response.outputs;
 
     return EXIT_SUCCESS;
 }

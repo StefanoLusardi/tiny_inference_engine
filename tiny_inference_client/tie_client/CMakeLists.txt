@@ -24,6 +24,8 @@ set(TARGET_SRC_PRIVATE
     src/data_type.cpp
     src/grpc_client.hpp
     src/grpc_client.cpp
+    src/tensor_converter.hpp
+    src/tensor_converter.cpp
     src/client_factory.cpp
     src/call_result.cpp
     ${GRPC_PROTO_FILES}

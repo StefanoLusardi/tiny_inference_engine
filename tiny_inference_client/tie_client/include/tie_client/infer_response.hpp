@@ -9,20 +9,17 @@
 
 namespace tie::client
 {
-using InferenceResponseOutput = infer_tensor;
-
 struct infer_response
 {
     std::string model_name;
     std::string model_version;
     std::string id;
+    std::vector<infer_tensor> output_tensors;
+    std::shared_ptr<infer_parameters> parameters;
 
-    std::shared_ptr<RequestParameters> parameters;
-    std::vector<InferenceResponseOutput> outputs;
-
-    void addOutput(const InferenceResponseOutput &output)
+    void add_output_tensor(const infer_tensor &output)
     {
-        this->outputs.push_back(output);
+        output_tensors.push_back(output);
     }
 };
 

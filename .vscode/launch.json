@@ -46,7 +46,7 @@
             "args": [],
         },
         {
-            "name": "Client - Image Model Infer (clang++ - lldb)",
+            "name": "Client - Simple Infer (clang++ - lldb)",
             "type": "lldb",
             "request": "launch",
             "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",
@@ -54,7 +54,7 @@
             "args": [],
         },
         {
-            "name": "Client - Image Model Infer (g++ - gdb)",
+            "name": "Client - Simple Infer (g++ - gdb)",
             "type": "cppdbg",
             "request": "launch",
             "cwd": "${workspaceFolder}/build/Debug/tiny_inference_client/examples",

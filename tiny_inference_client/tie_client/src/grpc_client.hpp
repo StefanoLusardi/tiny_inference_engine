@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tie_client/client_interface.hpp>
+#include "tensor_converter.hpp"
 #include <services.grpc.pb.h>
 
 #if defined(TIE_CLIENT_ENABLE_LOG)
@@ -26,23 +27,22 @@ public:
     auto is_server_live() -> std::tuple<call_result, bool> override;
     auto is_server_ready() -> std::tuple<call_result, bool> override;
     auto server_metadata() -> std::tuple<call_result, tie::client::server_metadata> override;
-    
     auto model_list() -> std::tuple<call_result, std::vector<std::string>> override;
     auto is_model_ready(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_load(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_unload(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, bool> override;
     auto model_metadata(const std::string& model_name, const std::string& model_version) -> std::tuple<call_result, tie::client::model_metadata> override;
-
     auto infer(const infer_request& infer_request) -> std::tuple<call_result, infer_response> override;
 
-private:
+protected:
     void rpc_handler(const std::shared_ptr<grpc::CompletionQueue>& cq);
 
+private:
     std::unique_ptr<inference::GRPCInferenceService::Stub> _stub;
-
-    std::vector<std::thread> _async_grpc_threads;
+    std::unique_ptr<tie::client::tensor_converter> _tensor_converter;
+    
     std::shared_ptr<grpc::CompletionQueue> _async_completion_queue;
-
+    std::vector<std::thread> _async_grpc_threads;
     unsigned num_async_threads = 1u;
 };
 

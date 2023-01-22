@@ -14,17 +14,20 @@ include(CMakeDependentOption)
 
 message("Compiler:  ${CMAKE_CXX_COMPILER_ID} - Version: ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    list(APPEND CXX_FLAGS "-fPIC" "-Wall" "-fno-rtti" "-fno-exceptions")
-    list(APPEND CXX_FLAGS_DEBUG "-Wsuggest-final-types" "-Wsuggest-final-methods" "-Wsuggest-override")
-    list(APPEND CXX_FLAGS_RELEASE "-O3" "-Wno-unused")
-endif()
+add_compile_options("-fstandalone-debug")
 
-if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    list(APPEND CXX_FLAGS "-fPIC" "-Wall" "-fno-rtti" "-fno-exceptions" "-Qunused-arguments" "-fcolor-diagnostics")
-    list(APPEND CXX_FLAGS_DEBUG "-Wdocumentation -fstandalone-debug")
-    list(APPEND CXX_FLAGS_RELEASE "-O" "-Wno-unused")
-endif()
+# if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+# https://stackoverflow.com/questions/48895687/cmake-add-compile-options-error-with-release-debug-config
+#     list(APPEND CXX_FLAGS "-fPIC" "-Wall" "-fno-rtti" "-fno-exceptions")
+#     list(APPEND CXX_FLAGS_DEBUG "-Wsuggest-final-types" "-Wsuggest-final-methods" "-Wsuggest-override")
+#     list(APPEND CXX_FLAGS_RELEASE "-O3" "-Wno-unused")
+# endif()
+
+# if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+#     list(APPEND CXX_FLAGS "-fPIC" "-Wall" "-fno-rtti" "-fno-exceptions" "-Qunused-arguments" "-fcolor-diagnostics")
+#     list(APPEND CXX_FLAGS_DEBUG "-Wdocumentation -fstandalone-debug")
+#     list(APPEND CXX_FLAGS_RELEASE "-O" "-Wno-unused")
+# endif()
 
 option(TIE_CLIENT_BUILD "Build Client" True)
 cmake_dependent_option(TIE_CLIENT_BUILD_EXAMPLES "Build Client examples" True TIE_CLIENT_BUILD ON)
