@@ -14,8 +14,8 @@ struct infer_response
     std::string model_name;
     std::string model_version;
     std::string id;
-    std::vector<infer_tensor> output_tensors;
     std::shared_ptr<infer_parameters> parameters;
+    std::vector<infer_tensor> output_tensors;
 
     void add_output_tensor(const infer_tensor &output)
     {

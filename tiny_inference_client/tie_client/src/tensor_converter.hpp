@@ -168,7 +168,8 @@ private:
             if constexpr (std::is_same_v<T, char>)
             {
                 std::memcpy(data.data(), contents, size * sizeof(std::byte));
-                output->data = data.data();
+                output->data = std::move(data.data());
+                // output->data = data.data();
                 return;
             }
             
@@ -178,18 +179,19 @@ private:
                 {
                     std::memcpy(&(data[i * sizeof(T)]), &(contents[i]), sizeof(T));
                 }
-                output->data = data.data();
+                output->data = std::move(data.data());
+                // output->data = data.data();
                 return;
             }
 
             std::memcpy(data.data(), contents, bytes_to_copy);
-            output->data = data.data();
-            // output->data = std::move(data);
+            output->data = std::move(data.data());
+            // output->data = data.data();
         }
     };
 
     template<template<typename, typename> class func_t, typename TensorT, typename... Args>
-    /*constexpr*/ void tensor_data_converter_call_wrapper(tie::client::data_type type, TensorT* tensor, Args... args) const
+    /*constexpr*/ void tensor_data_converter_call_wrapper(tie::client::data_type type, TensorT* tensor, Args&&... args) const
     {
         switch(type)
         {

@@ -3,21 +3,21 @@
 namespace tie::client
 {
 [[nodiscard]] 
-data_type::Value data_type::from_string(const char* str_value)
+data_type::value data_type::from_string(const std::string& str_value)
 {
-    if (string_to_type.find(str_value) != string_to_type.end())
-        return string_to_type.at(str_value);
+    if (auto str_type = _string_to_type.find(str_value); str_type != _string_to_type.end())
+        return str_type->second;
 
     return data_type::Unknown;
 }
 
 [[nodiscard]]
-const char* data_type::str() const
+std::string data_type::str() const
 {
-    return type_to_string.at(value);
+    return _type_to_string.at(_value);
 }
 
-std::map<data_type::Value, const char*> data_type::type_to_string
+std::map<data_type::value, std::string> data_type::_type_to_string
 {
     { data_type::Bool,    "BOOL"    },
     { data_type::Uint8,   "UINT8"   },
@@ -35,7 +35,7 @@ std::map<data_type::Value, const char*> data_type::type_to_string
     { data_type::Unknown, "Unknown" }
 };
 
-std::map<const char*, data_type::Value> data_type::string_to_type
+std::map<std::string, data_type::value> data_type::_string_to_type
 {
     { "BOOL"    ,  data_type::Bool    },
     { "UINT8"   ,  data_type::Uint8   },
@@ -52,6 +52,5 @@ std::map<const char*, data_type::Value> data_type::string_to_type
     { "STRING"  ,  data_type::String  },
     { "Unknown" ,  data_type::Unknown }
 };
-
 
 }

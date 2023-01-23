@@ -43,7 +43,7 @@ auto tensor_converter::get_infer_response(const inference::ModelInferResponse& r
         tie::client::infer_tensor infer_tensor_output;
 
         infer_tensor_output.name = response_output.name();
-        infer_tensor_output.datatype = tie::client::data_type(response_output.datatype().c_str());
+        infer_tensor_output.datatype = tie::client::data_type(response_output.datatype());
         infer_tensor_output.shape.reserve(response_output.shape_size());
         
         for (auto&& shape : response_output.shape())
@@ -52,7 +52,7 @@ auto tensor_converter::get_infer_response(const inference::ModelInferResponse& r
         }
 
         const size_t output_size = std::accumulate(response_output.shape().begin(), response_output.shape().end(), size_t(1), std::multiplies<>());
-        tensor_data_converter_call_wrapper<tensor_data_reader>(infer_tensor_output.datatype, &response_output, &infer_tensor_output, output_size);
+        tensor_data_converter_call_wrapper<tensor_data_reader>(infer_tensor_output.datatype, const_cast<inference::ModelInferResponse_InferOutputTensor*>(&response_output), &infer_tensor_output, output_size);
         infer_response.add_output_tensor(infer_tensor_output);
     }
 
